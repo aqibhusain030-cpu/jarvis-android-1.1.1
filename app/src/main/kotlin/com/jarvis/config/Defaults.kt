@@ -10,6 +10,7 @@ object Defaults {
     private val json = Json { ignoreUnknownKeys = true }
 
     fun parse(raw: String): JarvisConfig {
+        ConfigSchemaValidator.validate(raw)
         val obj = json.parseToJsonElement(raw).jsonObject
         val agent = obj["agent"]?.jsonObject
         val voice = obj["voice"]?.jsonObject
