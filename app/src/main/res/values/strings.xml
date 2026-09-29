@@ -41,4 +41,5 @@
     <string name="goals_empty">No goals yet.</string>
     <string name="memory_empty">Nothing remembered yet.</string>
     <string name="logs_empty">No events yet.</string>
+    <string name="accessibility_service_description">Allows JARVIS to inspect and control the foreground app UI when you explicitly enable its Android Accessibility service.</string>
 </resources>
