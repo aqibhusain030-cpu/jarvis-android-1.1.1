@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import json
 import re
+import hashlib
 from typing import Any, Dict, List, Optional
 
 from language import detect_language
@@ -105,6 +106,11 @@ def _parse_tool_calls(text: str) -> List[Dict[str, Any]]:
     return calls
 
 
+def _tool_call_id(name: str, args: Dict[str, Any]) -> str:
+    canonical = json.dumps({"name": name, "args": args}, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()[:16]
+
+
 def _run_tool(name: str, args: Dict[str, Any]) -> Dict[str, Any]:
     if _tool_bridge is None:
         return {"ok": False, "error": "no tool bridge", "code": "no_bridge"}
@@ -135,6 +141,7 @@ def respond(payload_json: str) -> str:
     )
 
     tool_trace: List[str] = []
+    seen_tool_calls = set()
     reply_text = ""
     prompt = base
 
@@ -152,9 +159,15 @@ def respond(payload_json: str) -> str:
         # Execute tools and continue
         results = []
         for c in calls:
-            r = _run_tool(c["name"], c.get("args") or {})
+            args = c.get("args") or {}
+            call_id = _tool_call_id(c["name"], args)
+            if call_id in seen_tool_calls:
+                results.append({"tool": c["name"], "result": {"ok": False, "error": "duplicate tool call suppressed", "code": "duplicate_call"}})
+                continue
+            seen_tool_calls.add(call_id)
+            r = _run_tool(c["name"], args)
             tool_trace.append(c["name"])
-            results.append({"tool": c["name"], "result": r})
+            results.append({"id": call_id, "tool": c["name"], "result": r})
         observation = json.dumps(results, ensure_ascii=False)
         prompt = (
             base
