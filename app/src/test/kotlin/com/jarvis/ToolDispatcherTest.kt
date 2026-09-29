@@ -117,7 +117,6 @@ class ToolDispatcherTest {
         val r = dispatcher.invoke("http_get", mapOf("url" to "https://evil.example"))
         assertThat((r as ToolResult.Err).code).isEqualTo("network_denied")
     }
-}
 
     @Test
     fun unknownParameterIsRejectedBeforeAuthorization() = runTest {
@@ -166,4 +165,4 @@ class ToolDispatcherTest {
         val r = dispatcher.invoke("send_sms", mapOf("number" to "123"))
         assertThat((r as ToolResult.Err).code).isEqualTo("bad_args")
     }
-
+}
