@@ -41,8 +41,24 @@ class HttpTool @Inject constructor(
         }
         try {
             client.newCall(Request.Builder().url(url).get().build()).execute().use { r ->
-                val body = r.body?.string()?.take(8_192) ?: ""
-                ToolResult.Ok("HTTP ${r.code}: $body")
+                val response = r.body ?: return@withContext ToolResult.Ok("HTTP " + r.code + ":")
+                val maxBytes = 64 * 1024L
+                if (response.contentLength() > maxBytes) {
+                    return@withContext ToolResult.Err("Response exceeds 64 KiB limit", "response_too_large")
+                }
+                val body = response.byteStream().use { input ->
+                    val buffer = ByteArray(8_192)
+                    val out = java.io.ByteArrayOutputStream()
+                    var total = 0
+                    while (total < maxBytes) {
+                        val n = input.read(buffer, 0, minOf(buffer.size, (maxBytes - total).toInt()))
+                        if (n < 0) break
+                        out.write(buffer, 0, n)
+                        total += n
+                    }
+                    out.toString(Charsets.UTF_8.name()).take(8_192)
+                }
+                ToolResult.Ok("HTTP " + r.code + ": " + body)
             }
         } catch (t: Throwable) {
             ToolResult.Err(t.message ?: "http failed", "http_error")
