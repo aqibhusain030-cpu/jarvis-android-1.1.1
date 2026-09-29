@@ -28,10 +28,9 @@ class GoalEngine @Inject constructor(
     private val activeCount = AtomicInteger(0)
 
     suspend fun create(title: String, description: String, priority: Int): String {
-        val max = config.current.value.maxActiveGoals.coerceAtLeast(1)
         return createMutex.withLock {
-            val running = memory.runningGoals().size
-            if (running >= max) {
+            val max = config.current.value.maxActiveGoals.coerceAtLeast(1)
+            if (activeCount.get() >= max || memory.runningGoals().size >= max) {
                 logger.w(TAG, "maxActiveGoals=$max reached; refusing new goal")
                 return@withLock ""
             }
@@ -46,11 +45,7 @@ class GoalEngine @Inject constructor(
                 status = GoalStatus.PENDING
             )
             memory.putGoal(goal)
-            activeCount.incrementAndGet()
-            scope.launch {
-                try { run(goal) }
-                finally { activeCount.updateAndGet { (it - 1).coerceAtLeast(0) } }
-            }
+            launchGoal(goal)
             id
         }
     }
@@ -58,17 +53,29 @@ class GoalEngine @Inject constructor(
     suspend fun resumePersisted() {
         createMutex.withLock {
             val max = config.current.value.maxActiveGoals.coerceAtLeast(1)
-            val resumable = memory.resumableGoals().sortedByDescending { it.priority }
-            for (g in resumable.take(max)) {
-                logger.i(TAG, "Resuming goal \${g.id} status=\${g.status}")
-                activeCount.incrementAndGet()
-                scope.launch {
-                    try { run(g) }
-                    finally { activeCount.updateAndGet { (it - 1).coerceAtLeast(0) } }
-                }
+            val available = (max - activeCount.get()).coerceAtLeast(0)
+            if (available == 0) {
+                logger.w(TAG, "maxActiveGoals=$max already occupied; deferring persisted goals")
+                return@withLock
             }
-            if (resumable.size > max) {
-                logger.w(TAG, "\${resumable.size - max} persisted goals deferred by maxActiveGoals=\$max")
+            val resumable = memory.resumableGoals().sortedByDescending { it.priority }
+            for (goal in resumable.take(available)) {
+                logger.i(TAG, "Resuming goal ${goal.id} status=${goal.status}")
+                launchGoal(goal)
+            }
+            if (resumable.size > available) {
+                logger.w(TAG, "${resumable.size - available} persisted goals deferred by maxActiveGoals=$max")
+            }
+        }
+    }
+
+    private fun launchGoal(goal: Goal) {
+        activeCount.incrementAndGet()
+        scope.launch {
+            try {
+                run(goal)
+            } finally {
+                activeCount.updateAndGet { (it - 1).coerceAtLeast(0) }
             }
         }
     }
@@ -81,7 +88,10 @@ class GoalEngine @Inject constructor(
         memory.putGoal(goal)
 
         while (true) {
-            if (goal.status == GoalStatus.CANCELLED || goal.status == GoalStatus.PAUSED) return
+            if (goal.status == GoalStatus.CANCELLED || goal.status == GoalStatus.PAUSED) {
+                memory.putGoal(goal)
+                return
+            }
             if (calls >= config.current.value.maxToolCallsPerGoal ||
                 (System.currentTimeMillis() - start) / 1000 > goal.maxRuntimeSeconds
             ) {
@@ -89,6 +99,7 @@ class GoalEngine @Inject constructor(
                 memory.putGoal(goal)
                 return
             }
+
             val step = goal.plan.firstOrNull { it.status == StepStatus.PENDING } ?: break
             val ok = executeStep(goal, step)
             calls++
@@ -112,7 +123,7 @@ class GoalEngine @Inject constructor(
         goal.status = if (allDone) GoalStatus.DONE else GoalStatus.FAILED
         goal.updatedAt = System.currentTimeMillis()
         memory.putGoal(goal)
-        logger.i(TAG, "Goal finished: \${goal.id} status=\${goal.status}")
+        logger.i(TAG, "Goal finished: ${goal.id} status=${goal.status}")
     }
 
     private suspend fun executeStep(goal: Goal, step: PlanStep): Boolean {
@@ -124,19 +135,21 @@ class GoalEngine @Inject constructor(
         if (tool.isNullOrBlank()) {
             step.status = StepStatus.DONE
             step.result = "no tool"
+            step.finishedAt = System.currentTimeMillis()
+            memory.putGoal(goal)
             return true
         }
-        return when (val r = dispatcher.invoke(tool, step.args)) {
+        return when (val result = dispatcher.invoke(tool, step.args)) {
             is ToolResult.Ok -> {
                 step.status = StepStatus.DONE
-                step.result = r.data?.toString()
+                step.result = result.data?.toString()
                 step.finishedAt = System.currentTimeMillis()
                 memory.putGoal(goal)
                 true
             }
             is ToolResult.Err -> {
                 step.status = StepStatus.FAILED
-                step.result = r.message
+                step.result = result.message
                 memory.putGoal(goal)
                 val backoffSec = (1L shl (step.attempts - 1).coerceAtMost(8)).coerceAtMost(300)
                 delay(backoffSec * 1000)
@@ -158,19 +171,13 @@ class GoalEngine @Inject constructor(
             createMutex.withLock {
                 val max = config.current.value.maxActiveGoals.coerceAtLeast(1)
                 if (activeCount.get() >= max) {
-                    logger.w(TAG, "maxActiveGoals=\$max reached; refusing resume id=\$id")
+                    logger.w(TAG, "maxActiveGoals=$max reached; refusing resume id=$id")
                     return@withLock
                 }
-                val g = memory.getGoal(id)
+                val goal = memory.getGoal(id)
                     ?.takeIf { it.status != GoalStatus.DONE && it.status != GoalStatus.CANCELLED }
                     ?: return@withLock
-                activeCount.incrementAndGet()
-                g.status = GoalStatus.RUNNING
-                memory.putGoal(g)
-                scope.launch {
-                    try { run(g) }
-                    finally { activeCount.updateAndGet { (it - 1).coerceAtLeast(0) } }
-                }
+                launchGoal(goal)
             }
         }
     }
