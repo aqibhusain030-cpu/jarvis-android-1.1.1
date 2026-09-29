@@ -6,7 +6,6 @@ import com.jarvis.models.ModelManager
 import com.jarvis.tools.ToolRegistry
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
@@ -77,7 +76,7 @@ class BrainBootstrap @Inject constructor(
                 )
             }
         }
-        val catalog = Json.encodeToString(arr)
+        val catalog = arr.toString()
         python.call("set_tool_catalog", catalog)
         logger.i(TAG, "Published ${registry.all().size} tool specs to Python")
     }

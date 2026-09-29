@@ -33,4 +33,12 @@
     <string name="goals_empty">अभी कोई लक्ष्य नहीं।</string>
     <string name="memory_empty">अभी कुछ याद नहीं।</string>
     <string name="logs_empty">अभी कोई घटना नहीं।</string>
+    <string name="action_start">शुरू करें</string>
+    <string name="action_resume">फिर शुरू करें</string>
+    <string name="action_emergency_stop">आपातकालीन रोक</string>
+    <string name="action_unlock_high_risk">उच्च-जोखिम कार्य अनलॉक करें</string>
+    <string name="high_risk_unlocked">उच्च-जोखिम कार्य अनलॉक हैं</string>
+    <string name="high_risk_locked">उच्च-जोखिम कार्य लॉक हैं</string>
+    <string name="svc_killed">आपातकालीन रोक सक्रिय</string>
+    <string name="reply_killed">रोक वाक्य पहचाना गया। जार्विस बंद कर दिया गया।</string>
 </resources>

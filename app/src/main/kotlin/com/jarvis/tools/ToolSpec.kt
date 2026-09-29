@@ -1,7 +1,6 @@
 package com.jarvis.tools
 
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
@@ -36,19 +35,15 @@ sealed class ToolResult {
     data class Err(val message: String, val code: String) : ToolResult()
 
     fun toJson(): String = when (this) {
-        is Ok -> Json.encodeToString(
-            buildJsonObject {
-                put("ok", true)
-                put("data", JsonPrimitive(data?.toString() ?: "null"))
-            }
-        )
-        is Err -> Json.encodeToString(
-            buildJsonObject {
-                put("ok", false)
-                put("error", message)
-                put("code", code)
-            }
-        )
+        is Ok -> buildJsonObject {
+            put("ok", true)
+            put("data", JsonPrimitive(data?.toString() ?: "null"))
+        }.toString()
+        is Err -> buildJsonObject {
+            put("ok", false)
+            put("error", message)
+            put("code", code)
+        }.toString()
     }
 }
 
