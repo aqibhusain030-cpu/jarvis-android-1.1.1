@@ -76,15 +76,15 @@ def _llm_generate(prompt: str, max_tokens: int = 700, temperature: float = 0.2) 
 def _tool_block() -> str:
     if not _tool_catalog:
         return ""
-    lines = ["# AVAILABLE TOOLS (call with ```tool {\"name\":\"...\",\"args\":{...}} ```)"]
-    for t in _tool_catalog[:40]:
+    lines = ["# AVAILABLE TOOLS"]
+    for t in _tool_catalog[:80]:
         name = t.get("name", "")
         desc = t.get("description_en") or t.get("description_hi") or ""
-        lines.append(f"- {name}: {desc}")
-    lines.append(
-        "If you need a tool, output ONLY a tool block then wait. "
-        "Otherwise answer the user directly in their language."
-    )
+        params = t.get("parameters") or {}
+        lines.append(
+            f"- {name}: {desc}; parameters="
+            f"{json.dumps(params, ensure_ascii=False, sort_keys=True)}"
+        )
     return "\n".join(lines)
 
 
