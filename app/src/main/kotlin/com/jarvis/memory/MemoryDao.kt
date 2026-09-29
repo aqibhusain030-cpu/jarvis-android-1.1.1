@@ -78,7 +78,7 @@ interface MemoryDao {
             updatedAt = :now
         WHERE fingerprint = :fingerprint
     """)
-    fun incrementLearningFailure(fingerprint: String, increment: Float, now: Long)
+    fun incrementLearningFailure(fingerprint: String, decrement: Float, now: Long)
 
     @Query("""
         UPDATE learning_lessons
@@ -89,6 +89,20 @@ interface MemoryDao {
         WHERE fingerprint = :fingerprint
     """)
     fun incrementLearningSuccess(fingerprint: String, increment: Float, now: Long)
+
+    @Query("""
+        UPDATE learning_lessons
+        SET correction = :correction,
+            confidence = MIN(1.0, confidence + :increment),
+            updatedAt = :now
+        WHERE fingerprint = :fingerprint
+    """)
+    fun setLearningCorrection(
+        fingerprint: String,
+        correction: String,
+        increment: Float,
+        now: Long
+    )
 
     @Query("DELETE FROM learning_lessons WHERE updatedAt < :cutoff")
     fun pruneLearningLessons(cutoff: Long): Int
