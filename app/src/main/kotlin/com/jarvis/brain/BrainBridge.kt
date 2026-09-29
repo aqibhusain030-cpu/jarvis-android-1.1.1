@@ -29,6 +29,31 @@ class BrainBridge @Inject constructor(
 ) {
     private val json = Json { ignoreUnknownKeys = true; encodeDefaults = true }
 
+    suspend fun planCommand(userText: String): com.jarvis.command.CommandDraft {
+        bootstrap.bootstrap()
+        python.startIfNeeded()
+        val detected = lang.explicitOverride(userText) ?: lang.detect(userText)
+        val payload = json.encodeToString(
+            ContextEnvelope.serializer(),
+            ContextEnvelope(
+                userText = userText,
+                detectedLanguage = languageName(detected),
+                recentMessages = memory.recentContext(limit = 12),
+                lessons = memory.relevantLessons(userText, limit = 5).map {
+                    "lesson: tool=${it.tool}; error=${it.errorCode}; correction=${it.correction}; confidence=${it.confidence}"
+                }
+            )
+        )
+        return runCatching {
+            val out = python.call("plan_command", payload)?.toString().orEmpty()
+            if (out.isBlank()) com.jarvis.command.CommandDraft(language = languageName(detected))
+            else json.decodeFromString(com.jarvis.command.CommandDraft.serializer(), out)
+        }.getOrElse {
+            logger.e(TAG, "brain.planCommand failed", it)
+            com.jarvis.command.CommandDraft(language = languageName(detected))
+        }
+    }
+
     suspend fun respond(userText: String): BrainReply {
         bootstrap.bootstrap()
         python.startIfNeeded()
