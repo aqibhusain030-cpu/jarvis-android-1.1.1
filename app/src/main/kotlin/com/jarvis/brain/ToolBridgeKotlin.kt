@@ -1,97 +1,85 @@
 package com.jarvis.brain
 
-import com.jarvis.config.ConfigRepository
 import com.jarvis.logging.JarvisLogger
-import com.jarvis.models.ModelManager
-import com.jarvis.tools.ToolRegistry
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
-import kotlinx.serialization.json.buildJsonArray
-import kotlinx.serialization.json.buildJsonObject
-import kotlinx.serialization.json.put
+import com.jarvis.tools.ToolDispatcher
+import com.jarvis.tools.ToolResult
+import kotlinx.coroutines.runBlocking
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonNull
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.booleanOrNull
+import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.doubleOrNull
+import kotlinx.serialization.json.intOrNull
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.longOrNull
 import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
- * One-shot production bootstrap:
- * 1. Ensure Python is running
- * 2. Load local LLM into [LocalLlmEngine] and pass it to Python `set_llm`
- * 3. Install [ToolBridgeKotlin] as Python `tools_bridge.set_dispatcher`
- * 4. Publish tool specs so the LLM can emit structured tool calls
+ * Kotlin side of the Python tool bridge.
+ * All requests go through ToolDispatcher, including schema validation and
+ * authorization. Nested JSON is preserved instead of being stringified.
  */
 @Singleton
-class BrainBootstrap @Inject constructor(
-    private val python: PythonRuntime,
-    private val llm: LocalLlmEngine,
-    private val toolBridge: ToolBridgeKotlin,
-    private val registry: ToolRegistry,
-    private val models: ModelManager,
-    private val config: ConfigRepository,
+class ToolBridgeKotlin @Inject constructor(
+    private val dispatcher: ToolDispatcher,
     private val logger: JarvisLogger
 ) {
-    @Volatile
-    var bootstrapped: Boolean = false
-        private set
+    private val json = Json { ignoreUnknownKeys = false }
 
-    @Volatile
-    var llmReady: Boolean = false
-        private set
-
-    suspend fun bootstrap(): Boolean = withContext(Dispatchers.IO) {
-        if (bootstrapped) return@withContext llmReady
-        try {
-            python.startIfNeeded()
-
-            // Wire tool dispatcher into Python first (works even without LLM).
-            python.call("install_tool_dispatcher", toolBridge)
-            publishToolCatalog()
-
-            // Load LLM if model file is present and verified.
-            llmReady = llm.loadIfNeeded()
-            if (llmReady) {
-                python.call("set_llm", llm)
-                logger.i(TAG, "LLM wired into Python brain")
-            } else {
-                logger.w(TAG, "LLM not loaded — brain will use fallback replies")
-            }
-
-            bootstrapped = true
-            true
+    fun invoke(tool: String, argsJson: String): String {
+        return try {
+            val args = parseArgs(argsJson)
+            val result = runBlocking { dispatcher.invoke(tool, args) }
+            resultToJson(result)
         } catch (t: Throwable) {
-            logger.e(TAG, "bootstrap failed", t)
-            false
+            logger.e(TAG, "bridge invoke failed for $tool", t)
+            resultToJson(ToolResult.Err("Tool bridge rejected the request", "bridge_error"))
         }
     }
 
-    private fun publishToolCatalog() {
-        val arr = buildJsonArray {
-            for (tool in registry.all()) {
-                add(
-                    buildJsonObject {
-                        put("name", tool.spec.name)
-                        put("description_en", tool.spec.descriptionEn)
-                        put("description_hi", tool.spec.descriptionHi)
-                        put("confirmation", tool.spec.confirmation.name)
-                    }
-                )
+    private fun parseArgs(raw: String): Map<String, Any?> {
+        if (raw.isBlank()) return emptyMap()
+        val obj = json.parseToJsonElement(raw).jsonObject
+        return obj.mapValues { (_, v) -> elementToAny(v) }
+    }
+
+    private fun elementToAny(element: kotlinx.serialization.json.JsonElement): Any? = when (element) {
+        is JsonObject -> element.mapValues { (_, v) -> elementToAny(v) }
+        is JsonArray -> element.map { elementToAny(it) }
+        is JsonNull -> null
+        is JsonPrimitive -> when {
+            element.contentOrNull == null -> null
+            element.booleanOrNull != null -> element.booleanOrNull
+            element.intOrNull != null -> element.intOrNull
+            element.longOrNull != null -> element.longOrNull
+            element.doubleOrNull != null && !element.isString -> element.doubleOrNull
+            else -> element.content
+        }
+        else -> element.toString()
+    }
+
+    private fun resultToJson(r: ToolResult): String = when (r) {
+        is ToolResult.Ok -> json.encodeToString(
+            kotlinx.serialization.json.buildJsonObject {
+                put("ok", true)
+                put("data", JsonPrimitive(r.data?.toString() ?: ""))
             }
-        }
-        val catalog = arr.toString()
-        python.call("set_tool_catalog", catalog)
-        logger.i(TAG, "Published ${registry.all().size} tool specs to Python")
-    }
-
-    /** Best-effort model presence report for UI/onboarding. */
-    fun modelStatus(): Map<String, Boolean> {
-        val out = mutableMapOf<String, Boolean>()
-        for (e in models.all()) {
-            out[e.id] = models.isPresent(e)
-        }
-        out["llm_engine"] = llm.ready
-        return out
+        )
+        is ToolResult.Err -> json.encodeToString(
+            kotlinx.serialization.json.buildJsonObject {
+                put("ok", false)
+                put("error", r.message)
+                put("code", r.code)
+            }
+        )
     }
 
     companion object {
-        private const val TAG = "BrainBootstrap"
+        private const val TAG = "ToolBridgeKotlin"
     }
 }
