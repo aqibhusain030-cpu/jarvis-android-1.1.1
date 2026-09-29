@@ -41,6 +41,8 @@ assert llm.count('ModelChecksum.verify(path, entry.sha256)') == 1
 assert 'authorizationMutex' in dispatcher
 assert 'validateArgs' in dispatcher
 assert 'elementToAny' in bridge
+assert 'toJsonElement' in bridge
+assert 'result.data.toJsonElement()' in bridge
 
 assert 'version = 2' in memory
 assert 'MIGRATION_1_2' in memory
@@ -49,6 +51,11 @@ assert 'allGoals()' in memory
 assert 'maxRetries' in entity and 'maxRuntimeSeconds' in entity
 assert "status IN ('RUNNING', 'PENDING')" in dao
 assert 'ActivityScenario.launch(MainActivity::class.java)' in activity_test
+assert 'currentCoroutineContext().isActive' in wake
+assert 'audio.isRunning()' in wake
+assert 'Local STT unavailable; transcript dropped' in read("app/src/main/kotlin/com/jarvis/voice/SpeechRecognizerBridge.kt")
+assert '\\${' not in memory
+assert '\\${' not in read("app/src/main/kotlin/com/jarvis/autonomy/GoalEngine.kt")
 
 print("source contracts: PASS")
 
