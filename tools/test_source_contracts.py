@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """Fast, network-free source contract checks for the JARVIS release."""
 from pathlib import Path
-import re
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -18,6 +17,10 @@ cpp_whisper = read("app/src/main/cpp/whisper_jni.cpp")
 bridge = read("app/src/main/kotlin/com/jarvis/brain/ToolBridgeKotlin.kt")
 dispatcher = read("app/src/main/kotlin/com/jarvis/tools/ToolDispatcher.kt")
 cmake = read("app/src/main/cpp/CMakeLists.txt")
+memory = read("app/src/main/kotlin/com/jarvis/memory/MemoryStore.kt")
+dao = read("app/src/main/kotlin/com/jarvis/memory/MemoryDao.kt")
+entity = read("app/src/main/kotlin/com/jarvis/memory/MemoryEntity.kt")
+activity_test = read("app/src/androidTest/kotlin/com/jarvis/WakeWordInstrumentedTest.kt")
 
 assert 'Regex("\\\\s+")' in prov
 assert 'melspectrogram.onnx' in wake and 'embedding_model.onnx' in wake
@@ -30,7 +33,7 @@ assert 'java/com/jarvis' not in cmake
 assert 'Java_com_jarvis_brain_LlamaJNI_nativeGenerate' in cpp_llama
 assert 'jfloat temp' in cpp_llama
 assert 'Java_com_jarvis_brain_WhisperJNI_nativeTranscribe' in cpp_whisper
-assert 'const float' not in cpp_whisper  # JNI must convert PCM16 to float before whisper_full.
+assert 'const float' not in cpp_whisper
 assert 'std::vector<float> pcm' in cpp_whisper
 assert 'nativeTranscribe(handle: Long, pcm: ByteArray, language: String)' in whisper
 assert llm.count('val entry = models.all().firstOrNull') == 1
@@ -38,6 +41,15 @@ assert llm.count('ModelChecksum.verify(path, entry.sha256)') == 1
 assert 'authorizationMutex' in dispatcher
 assert 'validateArgs' in dispatcher
 assert 'elementToAny' in bridge
+
+assert 'version = 2' in memory
+assert 'MIGRATION_1_2' in memory
+assert 'resumableGoals()' in memory
+assert 'allGoals()' in memory
+assert 'maxRetries' in entity and 'maxRuntimeSeconds' in entity
+assert "status IN ('RUNNING', 'PENDING')" in dao
+assert 'ActivityScenario.launch(MainActivity::class.java)' in activity_test
+
 print("source contracts: PASS")
 
 if __name__ == "__main__":
