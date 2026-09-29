@@ -3,6 +3,7 @@ package com.jarvis
 import com.google.common.truth.Truth.assertThat
 import com.jarvis.config.ConfigRepository
 import com.jarvis.logging.JarvisLogger
+import com.jarvis.memory.MemoryStore
 import com.jarvis.security.AuditLogger
 import com.jarvis.security.KillSwitch
 import com.jarvis.security.SecurityPolicy
@@ -27,6 +28,7 @@ class ToolDispatcherTest {
     private lateinit var dispatcher: ToolDispatcher
     private lateinit var unlock: com.jarvis.security.SecurityUnlockManager
     private lateinit var permissionGate: PermissionGate
+    private lateinit var memory: MemoryStore
 
     private class FakeTool(override val spec: ToolSpec, val result: ToolResult) : Tool {
         override suspend fun invoke(args: Map<String, Any?>) = result
@@ -46,6 +48,7 @@ class ToolDispatcherTest {
         every { kill.isKilled } returns killState
         unlock = mockk(relaxed = true)
         permissionGate = mockk(relaxed = true)
+        memory = mockk(relaxed = true)
         every { permissionGate.missing(any()) } returns emptyList()
         every { unlock.consume() } returns true
         every { policy.toolAllowed(any()) } returns true
@@ -55,7 +58,19 @@ class ToolDispatcherTest {
         every { rate.allow(any(), any()) } returns true
         io.mockk.coEvery { confirmation.ask(any()) } returns true
         io.mockk.coEvery { confirmation.ask(any(), any()) } returns true
-        dispatcher = ToolDispatcher(registry, policy, confirmation, unlock, rate, audit, config, kill, log, permissionGate)
+        dispatcher = ToolDispatcher(
+            registry,
+            policy,
+            confirmation,
+            unlock,
+            rate,
+            audit,
+            config,
+            kill,
+            log,
+            permissionGate,
+            memory
+        )
     }
 
     @Test
