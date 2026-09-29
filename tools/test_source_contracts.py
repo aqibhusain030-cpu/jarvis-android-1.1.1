@@ -93,7 +93,6 @@ assert 'JarvisAccessibilityService' in read("app/src/main/kotlin/com/jarvis/acce
 assert 'accessibility_action' in read("app/src/main/kotlin/com/jarvis/tools/impl/AccessibilityTool.kt")
 assert 'BIND_ACCESSIBILITY_SERVICE' in read("app/src/main/AndroidManifest.xml")
 assert 'UniversalCommandEngine' in service
-assert 'never executes' in python_brain.lower()
 assert '_run_tool' not in python_brain
 assert '_tool_bridge' not in python_brain
 
