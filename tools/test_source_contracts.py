@@ -65,6 +65,14 @@ assert 'No unverified embedding or vision checkpoint added' in read("docs/APPLE_
 assert 'lastFailureByTool' in dispatcher
 assert 'recordLessonSuccess' in dispatcher
 assert 'learning_lessons' in dao
+wake_detector = read("app/src/main/kotlin/com/jarvis/service/WakeWordDetector.kt")
+assert "enum class WakeRecognitionState" in wake_detector
+assert "WakeTriggerEvent" in wake_detector
+assert "WakeRecognitionState.LISTENING" in wake_detector
+assert "WakeRecognitionState.TRIGGERED" in wake_detector
+assert "WakeRecognitionState.ERROR" in wake_detector
+assert "SystemClock.elapsedRealtime()" in wake_detector
+
 appfn = read("app/src/main/kotlin/com/jarvis/appfunctions/JarvisAppFunctionService.kt")
 appfn_manifest = read("app/src/main/AndroidManifest.xml")
 appfn_metadata = read("app/src/main/res/xml/app_metadata.xml")
