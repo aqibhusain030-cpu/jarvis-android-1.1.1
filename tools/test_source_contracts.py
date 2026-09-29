@@ -79,6 +79,7 @@ assert 'invokeLockedPlanAction' in dispatcher
 command_engine = read("app/src/main/kotlin/com/jarvis/command/UniversalCommandEngine.kt")
 action_plan = read("app/src/main/kotlin/com/jarvis/command/ActionPlan.kt")
 cap_registry = read("app/src/main/kotlin/com/jarvis/capability/CapabilityRegistry.kt")
+cap_model = read("app/src/main/kotlin/com/jarvis/capability/Capability.kt")
 cap_backends = read("app/src/main/kotlin/com/jarvis/capability/DefaultCapabilityBackends.kt")
 python_brain = read("app/src/main/python/brain.py")
 brain_bridge = read("app/src/main/kotlin/com/jarvis/brain/BrainBridge.kt")
@@ -87,7 +88,7 @@ assert 'UniversalCommandEngine' in command_engine
 assert 'ToolArgsCodec.canonical' in action_plan
 assert 'planCommand' in brain_bridge
 assert 'FutureAppFunctionsBackend' in cap_backends
-assert 'requiresPlatformIntegration' in cap_registry
+assert 'requiresPlatformIntegration' in cap_model
 assert 'JarvisAccessibilityService' in read("app/src/main/kotlin/com/jarvis/accessibility/JarvisAccessibilityService.kt")
 assert 'accessibility_action' in read("app/src/main/kotlin/com/jarvis/tools/impl/AccessibilityTool.kt")
 assert 'BIND_ACCESSIBILITY_SERVICE' in read("app/src/main/AndroidManifest.xml")
