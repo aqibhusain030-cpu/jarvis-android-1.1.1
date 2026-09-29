@@ -34,6 +34,9 @@ class BrainBridge @Inject constructor(
         python.startIfNeeded()
         val detected = lang.explicitOverride(userText) ?: lang.detect(userText)
         val context = memory.recentContext(limit = 12)
+        val lessons = memory.relevantLessons(userText, limit = 5).map {
+            "lesson: tool=" + it.tool + "; error=" + it.errorCode + "; correction=" + it.correction + "; confidence=" + it.confidence
+        }
         val payload = json.encodeToString(
             ContextEnvelope.serializer(),
             ContextEnvelope(
@@ -43,7 +46,8 @@ class BrainBridge @Inject constructor(
                     LanguageDetector.Lang.EN -> "en"
                     LanguageDetector.Lang.HINGLISH -> "hinglish"
                 },
-                recentMessages = context
+                recentMessages = context,
+                lessons = lessons
             )
         )
         return try {
@@ -72,7 +76,8 @@ class BrainBridge @Inject constructor(
     data class ContextEnvelope(
         val userText: String,
         val detectedLanguage: String,
-        val recentMessages: List<String>
+        val recentMessages: List<String>,
+        val lessons: List<String> = emptyList()
     )
 
     companion object {
