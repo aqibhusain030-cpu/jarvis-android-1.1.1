@@ -5,12 +5,13 @@ plugins {
     id("org.jetbrains.kotlin.plugin.serialization")
     id("com.google.dagger.hilt.android")
     id("com.chaquo.python")
+    id("com.google.devtools.ksp")
     kotlin("kapt")
 }
 
 android {
     namespace = "com.jarvis"
-    compileSdk = 36
+    compileSdk = 37
     defaultConfig {
         applicationId = "com.jarvis"
         minSdk = 31
@@ -65,6 +66,8 @@ chaquopy {
 }
 
 dependencies {
+    implementation("androidx.appfunctions:appfunctions:1.0.0-alpha10")
+    ksp("androidx.appfunctions:appfunctions-compiler:1.0.0-alpha10")
     implementation("androidx.core:core-ktx:1.13.1")
     implementation("androidx.appcompat:appcompat:1.7.0")
     implementation("androidx.activity:activity-compose:1.9.2")
@@ -104,4 +107,9 @@ dependencies {
     androidTestImplementation("androidx.test:runner:1.6.2")
     androidTestImplementation(composeBom)
     androidTestImplementation("androidx.compose.ui:ui-test-junit4")
+}
+
+// AppFunctions KSP aggregation is required for system discovery metadata.
+ksp {
+    arg("appfunctions:aggregateAppFunctions", "true")
 }
