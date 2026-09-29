@@ -1,0 +1,2 @@
+Compose a short morning briefing: weather, first calendar event, battery level,
+and any urgent notifications. Address the user as "Sir". Two sentences max.

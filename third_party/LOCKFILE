@@ -1,0 +1,17 @@
+# JARVIS immutable native source lock
+# Generated 2026-09-29
+
+[llama.cpp]
+repository=https://github.com/ggml-org/llama.cpp.git
+commit=526c43b8f7dfea9032e9f35e7a1be9183ca7cc20
+commit_verification=GitHub verified commit
+
+[whisper.cpp]
+repository=https://github.com/ggml-org/whisper.cpp.git
+tag=v1.9.4
+commit=927cfce34f31707e17f2bff35c349632fb9e2c3a
+commit_verification=Commit resolved from GitHub release tag; tag object is unsigned
+
+[build_policy]
+network_source_pinning=immutable commit SHA
+release_artifacts=must be hash-verified before activation

@@ -1,0 +1,26 @@
+.gradle/
+build/
+local.properties
+*.iml
+.idea/
+captures/
+.externalNativeBuild/
+.cxx/
+__pycache__/
+*.py[cod]
+.chaquopy/
+app/src/main/cpp/third_party/llama.cpp/
+app/src/main/cpp/third_party/whisper.cpp/
+.model-cache/
+models/
+app/src/main/assets/.model-cache/
+models/
+*.jks
+*.keystore
+keystore.properties
+.DS_Store
+Thumbs.db
+
+# Optional local wake-word asset; never commit without verified licensing/hash.
+app/src/main/assets/models/*.onnx
+app/src/main/assets/models/*.onnx.sha256

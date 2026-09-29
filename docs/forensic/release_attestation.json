@@ -1,0 +1,38 @@
+{
+  "release": {
+    "versionName": "1.1.1",
+    "versionCode": 3,
+    "date": "2026-09-29"
+  },
+  "source_archive": {
+    "sha256": "03834312450a6f3f5eb6ada86e095d4e226374d4a6e13d439d5b964b144109ec"
+  },
+  "static_validation": {
+    "python_ast": "PASS",
+    "json": "PASS",
+    "xml": "PASS",
+    "bash_n": "PASS",
+    "secret_scan": "PASS",
+    "manifest_security": "PASS",
+    "model_hash_format": "PASS",
+    "source_contracts": "PASS",
+    "jni_contracts": "PASS",
+    "wakeword_asset_contract": "PASS"
+  },
+  "third_party": {
+    "llama.cpp": "526c43b8f7dfea9032e9f35e7a1be9183ca7cc20",
+    "whisper.cpp": "927cfce34f31707e17f2bff35c349632fb9e2c3a",
+    "gradle_distribution": "gradle-8.11.1-bin.zip"
+  },
+  "models": {
+    "qwen2.5-3b-instruct-q4_k_m.gguf": "626b4a6678b86442240e33df819e00132d3ba7dddfe1cdc4fbb18e0a9615c62d",
+    "ggml-small.bin": "1be3a9b2063867b937e64e2ec7483364a79917e157fa98c5d94b5c1fffea987b",
+    "openwakeword": "digest intentionally supplied at provisioning time; not embedded"
+  },
+  "execution": {
+    "sandbox_authorized": false,
+    "executed": false,
+    "android_build_verified": false,
+    "physical_device_verified": false
+  }
+}

@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">जार्विस</string>
+    <string name="svc_idle">निष्क्रिय</string>
+    <string name="svc_listening">“हे जार्विस” सुन रहा हूँ…</string>
+    <string name="svc_thinking">सोच रहा हूँ…</string>
+    <string name="svc_speaking">बोल रहा हूँ…</string>
+    <string name="reply_yes_sir">जी सर?</string>
+    <string name="reply_didnt_catch">सर, समझ नहीं पाया।</string>
+    <string name="reply_error">क्षमा करें सर, कुछ गड़बड़ हुई।</string>
+    <string name="action_stop">रोकें</string>
+    <string name="service_notif_listener">जार्विस सूचना वाचक</string>
+    <string name="onboard_welcome">नमस्ते सर। मैं जार्विस हूँ।</string>
+    <string name="onboard_start">शुरू करें</string>
+    <string name="onboard_language">भाषा</string>
+    <string name="onboard_language_body">अपनी पसंदीदा भाषा चुनें। मैं आपकी भाषा के अनुसार जवाब दूँगा।</string>
+    <string name="onboard_permissions">अनुमतियाँ</string>
+    <string name="onboard_permissions_body">फ़ोन नियंत्रित करने के लिए इनकी ज़रूरत है। हर अनुमति केवल तब उपयोग होती है जब आप कहें।</string>
+    <string name="onboard_grant">अनुमति दें</string>
+    <string name="onboard_voice">आवाज़</string>
+    <string name="onboard_voice_body">मेरी आवाज़ जाँचें। बाद में सेटिंग्स में बदल सकते हैं।</string>
+    <string name="onboard_done">आगे बढ़ें</string>
+    <string name="onboard_ready">तैयार हूँ सर।</string>
+    <string name="onboard_begin">जार्विस चालू करें</string>
+    <string name="status_prefix">स्थिति</string>
+    <string name="screen_settings">सेटिंग्स</string>
+    <string name="screen_goals">लक्ष्य</string>
+    <string name="screen_memory">स्मृति</string>
+    <string name="screen_logs">लॉग</string>
+    <string name="settings_language">भाषा</string>
+    <string name="settings_voice">आवाज़</string>
+    <string name="settings_safety">सुरक्षा और पुष्टि</string>
+    <string name="goals_empty">अभी कोई लक्ष्य नहीं।</string>
+    <string name="memory_empty">अभी कुछ याद नहीं।</string>
+    <string name="logs_empty">अभी कोई घटना नहीं।</string>
+</resources>

@@ -1,0 +1,26 @@
+JARVIS THIRD-PARTY LICENSE NOTICE
+
+1. llama.cpp
+   Source: https://github.com/ggml-org/llama.cpp
+   License: MIT
+
+2. whisper.cpp
+   Source: https://github.com/ggml-org/whisper.cpp
+   License: MIT
+
+3. openWakeWord source code
+   Source: https://github.com/dscripka/openWakeWord
+   License: Apache License 2.0
+
+4. openWakeWord pretrained models
+   Source project documentation distinguishes pretrained model licensing from source licensing.
+   Included pretrained models are documented upstream as CC BY-NC-SA 4.0.
+   Verify the exact wake-word asset and current license before commercial distribution.
+
+5. Qwen model artifacts
+   The Qwen model license/terms apply separately to the model weights.
+   Verify the exact model release terms before commercial distribution.
+
+6. AndroidX / Jetpack / Kotlin / Hilt / Chaquopy / ONNX Runtime / OkHttp
+   Their respective licenses remain applicable. Generate dependency/SBOM/license reports
+   from the resolved release dependency graph before distribution.

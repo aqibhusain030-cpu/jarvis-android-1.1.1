@@ -1,0 +1,19 @@
+-keep class com.chaquo.python.** { *; }
+-keep class com.jarvis.brain.** { *; }
+-keepclasseswithmembernames class * { native <methods>; }
+-keep class com.jarvis.brain.LlamaJNI { *; }
+-keep class com.jarvis.brain.WhisperJNI { *; }
+-keepattributes *Annotation*, InnerClasses
+-dontnote kotlinx.serialization.**
+-keepclassmembers class kotlinx.serialization.json.** { *** Companion; }
+-keepclasseswithmembers class kotlinx.serialization.json.** { kotlinx.serialization.KSerializer serializer(...); }
+-keep,includedescriptorclasses class com.jarvis.**$$serializer { *; }
+-keepclassmembers class com.jarvis.** { *** Companion; }
+-keepclasseswithmembers class com.jarvis.** { kotlinx.serialization.KSerializer serializer(...); }
+-keep class * extends androidx.room.RoomDatabase { <init>(); }
+-keep class ai.onnxruntime.** { *; }
+-dontwarn ai.onnxruntime.**
+-dontwarn okhttp3.**
+-dontwarn okio.**
+-keep class com.jarvis.tools.ToolSpec { *; }
+-keep class com.jarvis.tools.ToolRegistry { *; }

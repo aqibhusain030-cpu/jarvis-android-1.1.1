@@ -1,0 +1,6 @@
+JARVIS Android Production Security Remediation Release
+versionName=1.1.1
+versionCode=3
+release_date=2026-09-29
+base_archive_sha256=03834312450a6f3f5eb6ada86e095d4e226374d4a6e13d439d5b964b144109ec
+runtime_verification=not_performed_in_this_environment

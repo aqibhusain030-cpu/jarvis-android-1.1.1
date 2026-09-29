@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">JARVIS</string>
+    <string name="svc_idle">Idle</string>
+    <string name="svc_listening">Listening for “Hey JARVIS”…</string>
+    <string name="svc_thinking">Thinking…</string>
+    <string name="svc_speaking">Speaking…</string>
+    <string name="reply_yes_sir">Yes, Sir?</string>
+    <string name="reply_didnt_catch">I didn\'t catch that, Sir.</string>
+    <string name="reply_error">Sorry Sir, something went wrong.</string>
+    <string name="action_stop">Stop</string>
+    <string name="service_notif_listener">JARVIS Notification Reader</string>
+    <string name="onboard_welcome">Hello, Sir. I am JARVIS.</string>
+    <string name="onboard_start">Begin</string>
+    <string name="onboard_language">Language</string>
+    <string name="onboard_language_body">Choose your preferred language. I\'ll match whatever you speak.</string>
+    <string name="onboard_permissions">Permissions</string>
+    <string name="onboard_permissions_body">I need these to control your phone. Each is used only when you ask.</string>
+    <string name="onboard_grant">Grant</string>
+    <string name="onboard_voice">Voice</string>
+    <string name="onboard_voice_body">Test my voice. You can change it later in Settings.</string>
+    <string name="onboard_done">Continue</string>
+    <string name="onboard_ready">Ready, Sir.</string>
+    <string name="onboard_begin">Launch JARVIS</string>
+    <string name="status_prefix">Status</string>
+    <string name="screen_settings">Settings</string>
+    <string name="screen_goals">Goals</string>
+    <string name="screen_memory">Memory</string>
+    <string name="screen_logs">Logs</string>
+    <string name="settings_language">Language</string>
+    <string name="settings_voice">Voice</string>
+    <string name="settings_safety">Safety &amp; Confirmation</string>
+    <string name="goals_empty">No goals yet.</string>
+    <string name="memory_empty">Nothing remembered yet.</string>
+    <string name="logs_empty">No events yet.</string>
+</resources>
