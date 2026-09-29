@@ -32,4 +32,6 @@ object ModelChecksum {
         if (!file.exists() || !file.isFile) return false
         return sha256(file).equals(exp, ignoreCase = true)
     }
+
+    fun verify(path: String, expected: String): Boolean = verify(File(path), expected)
 }

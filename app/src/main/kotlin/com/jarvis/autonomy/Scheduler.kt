@@ -101,7 +101,10 @@ class Scheduler @Inject constructor(
                         else -> entry.logger().w(TAG, "unknown alarm payload: $payload")
                     }
                 } catch (t: Throwable) {
-                    entryLogger(context).e(TAG, "alarm execution failed", t)
+                    EntryPointAccessors.fromApplication(
+                        context.applicationContext,
+                        SchedulerEntryPoint::class.java
+                    ).logger().e(TAG, "alarm execution failed", t)
                 } finally {
                     pending.finish()
                 }
@@ -109,8 +112,6 @@ class Scheduler @Inject constructor(
         }
     }
 
-    private fun entryLogger(context: Context): JarvisLogger =
-        EntryPointAccessors.fromApplication(context.applicationContext, SchedulerEntryPoint::class.java).logger()
 
     @EntryPoint
     @InstallIn(SingletonComponent::class)

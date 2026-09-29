@@ -12,9 +12,9 @@ __pycache__/
 app/src/main/cpp/third_party/llama.cpp/
 app/src/main/cpp/third_party/whisper.cpp/
 .model-cache/
-models/
+/models/
 app/src/main/assets/.model-cache/
-models/
+/models/
 *.jks
 *.keystore
 keystore.properties
@@ -24,3 +24,7 @@ Thumbs.db
 # Optional local wake-word asset; never commit without verified licensing/hash.
 app/src/main/assets/models/*.onnx
 app/src/main/assets/models/*.onnx.sha256
+
+# Kotlin model-management source is tracked; only runtime model data is ignored.
+!app/src/main/kotlin/com/jarvis/models/
+!app/src/main/kotlin/com/jarvis/models/**

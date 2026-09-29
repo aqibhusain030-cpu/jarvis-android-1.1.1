@@ -4,6 +4,8 @@ import com.jarvis.logging.JarvisLogger
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.contentOrNull
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -21,12 +23,18 @@ class AuditLogger @Inject constructor(private val logger: JarvisLogger) {
         withContext(Dispatchers.IO) {
             val now = Date()
             val file = File(logger.dir("audit"), "${fmt.format(now)}.log")
-            val status = runCatching { kotlinx.serialization.json.Json.parseToJsonElement(result).jsonObject["code"]?.toString() }
-                .getOrNull()
+            val status = runCatching {
+                kotlinx.serialization.json.Json.parseToJsonElement(result)
+                    .jsonObject["code"]
+                    ?.jsonPrimitive
+                    ?.contentOrNull
+            }.getOrNull()
                 ?: if (result.contains("\"ok\":true")) "ok" else "unknown"
+
             val keys = args.keys.sorted().take(32).joinToString(",")
             val line = "${timeFmt.format(now)} | $tool | confirmed=$confirmed | arg_keys=$keys | result_code=$status | result_len=${result.length}"
-            runCatching { file.appendText(line) }
+
+            runCatching { file.appendText(line + "\n") }
                 .onFailure { logger.e(TAG, "audit write failed", it) }
             cleanup(fmt.format(now))
         }
@@ -39,5 +47,8 @@ class AuditLogger @Inject constructor(private val logger: JarvisLogger) {
             if (day != today && f.lastModified() < keep) f.delete()
         }
     }
-    companion object { private const val TAG = "AuditLogger" }
+
+    companion object {
+        private const val TAG = "AuditLogger"
+    }
 }

@@ -52,9 +52,9 @@ class WakeWordDetector @Inject constructor(
         val embedding = e.createSession(assets.embedding.absolutePath, opts)
         val classifier = e.createSession(assets.classifier.absolutePath, opts)
 
-        melInputName = mel.getInputNames().firstOrNull() ?: "input"
-        embeddingInputName = embedding.getInputNames().firstOrNull() ?: "input_1"
-        classifierInputName = classifier.getInputNames().firstOrNull() ?: "input_1"
+        melInputName = mel.inputNames.firstOrNull() ?: "input"
+        embeddingInputName = embedding.inputNames.firstOrNull() ?: "input_1"
+        classifierInputName = classifier.inputNames.firstOrNull() ?: "input_1"
 
         melSession = mel
         embeddingSession = embedding

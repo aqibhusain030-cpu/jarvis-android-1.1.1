@@ -49,7 +49,7 @@ class WakeWordAssetProvisioner @Inject constructor(
 
         if (target.exists() && sidecar.exists()) {
             val digest = readDigest(sidecar)
-            check(ModelChecksum.verify(target, digest)) {
+            check(ModelChecksum.verify(target.absolutePath, digest)) {
                 "wake-word asset checksum mismatch: ${target.name}"
             }
             return
@@ -66,7 +66,7 @@ class WakeWordAssetProvisioner @Inject constructor(
             ctx.assets.open(modelAsset).use { input ->
                 tmp.outputStream().use { output -> input.copyTo(output) }
             }
-            require(ModelChecksum.verify(tmp, digest)) {
+            require(ModelChecksum.verify(tmp.absolutePath, digest)) {
                 "wake-word asset checksum mismatch: ${target.name}"
             }
             if (target.exists()) target.delete()
