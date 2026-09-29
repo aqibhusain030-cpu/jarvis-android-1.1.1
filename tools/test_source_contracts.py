@@ -57,6 +57,7 @@ assert 'response_too_large' in read("app/src/main/kotlin/com/jarvis/tools/impl/H
 assert '64 * 1024L' in read("app/src/main/kotlin/com/jarvis/tools/impl/HttpTool.kt")
 assert 'fun cosine(a: FloatArray, b: FloatArray)' in read("app/src/main/kotlin/com/jarvis/memory/MemorySearch.kt")
 assert 'fun lexical(query: String, value: String)' in read("app/src/main/kotlin/com/jarvis/memory/MemorySearch.kt")
+assert 'No unverified embedding or vision checkpoint added' in read("docs/APPLE_SYSTEMS_ADOPTION_AUDIT.md")
 assert 'currentCoroutineContext().isActive' in wake
 assert 'audio.isRunning()' in wake
 assert 'Local STT unavailable; transcript dropped' in read("app/src/main/kotlin/com/jarvis/voice/SpeechRecognizerBridge.kt")
