@@ -7,6 +7,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: jarvis-ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   static-security:
     runs-on: ubuntu-latest
