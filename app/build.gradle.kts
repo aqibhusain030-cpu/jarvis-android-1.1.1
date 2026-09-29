@@ -15,6 +15,7 @@ android {
         applicationId = "com.jarvis"
         minSdk = 31
         targetSdk = 36
+        ndkVersion = "26.1.10909125"
         versionCode = 3
         versionName = "1.1.1"
         ndk { abiFilters += listOf("arm64-v8a") }
@@ -51,14 +52,14 @@ android {
     }
     lint { abortOnError = true; checkReleaseBuilds = true }
 }
-    
+
 chaquopy {
     defaultConfig {
         version = "3.10"
         buildPython("python3.10")
         pip {
-            install("numpy==1.26.4")
-            install("regex==2024.7.24")
+            install("numpy==1.26.2")
+            install("regex==2023.10.3")
         }
     }
 }
