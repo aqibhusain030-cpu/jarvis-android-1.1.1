@@ -51,6 +51,12 @@ assert 'allGoals()' in memory
 assert 'maxRetries' in entity and 'maxRuntimeSeconds' in entity
 assert "status IN ('RUNNING', 'PENDING')" in dao
 assert 'ActivityScenario.launch(MainActivity::class.java)' in activity_test
+assert 'ConfigSchemaValidator.validate(raw)' in read("app/src/main/kotlin/com/jarvis/config/Defaults.kt")
+assert 'schema_version' in read("app/src/main/assets/config.json")
+assert 'response_too_large' in read("app/src/main/kotlin/com/jarvis/tools/impl/HttpTool.kt")
+assert '64 * 1024L' in read("app/src/main/kotlin/com/jarvis/tools/impl/HttpTool.kt")
+assert 'fun cosine(a: FloatArray, b: FloatArray)' in read("app/src/main/kotlin/com/jarvis/memory/MemorySearch.kt")
+assert 'fun lexical(query: String, value: String)' in read("app/src/main/kotlin/com/jarvis/memory/MemorySearch.kt")
 assert 'currentCoroutineContext().isActive' in wake
 assert 'audio.isRunning()' in wake
 assert 'Local STT unavailable; transcript dropped' in read("app/src/main/kotlin/com/jarvis/voice/SpeechRecognizerBridge.kt")
