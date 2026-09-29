@@ -9,6 +9,7 @@ import com.jarvis.security.SecurityPolicy
 import com.jarvis.tools.*
 import io.mockk.every
 import io.mockk.mockk
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.runTest
 import org.junit.Before
 import org.junit.Test
@@ -22,6 +23,7 @@ class ToolDispatcherTest {
     private lateinit var config: ConfigRepository
     private lateinit var log: JarvisLogger
     private lateinit var kill: KillSwitch
+    private lateinit var killState: MutableStateFlow<Boolean>
     private lateinit var dispatcher: ToolDispatcher
     private lateinit var unlock: com.jarvis.security.SecurityUnlockManager
     private lateinit var permissionGate: PermissionGate
@@ -40,7 +42,8 @@ class ToolDispatcherTest {
         config = mockk(relaxed = true)
         log = mockk(relaxed = true)
         kill = mockk(relaxed = true)
-        every { kill.isKilled } returns kotlinx.coroutines.flow.MutableStateFlow(false)
+        killState = MutableStateFlow(false)
+        every { kill.isKilled } returns killState
         unlock = mockk(relaxed = true)
         permissionGate = mockk(relaxed = true)
         every { permissionGate.missing(any()) } returns emptyList()
@@ -89,9 +92,17 @@ class ToolDispatcherTest {
 
     @Test
     fun killSwitchBlocks() = runTest {
-        kill.kill()
-        registry.register(FakeTool(ToolSpec("make_call", "कॉल", "Call"), ToolResult.Ok("called")))
+        killState.value = true
+
+        registry.register(
+            FakeTool(
+                ToolSpec("make_call", "कॉल", "Call"),
+                ToolResult.Ok("called")
+            )
+        )
         val r = dispatcher.invoke("make_call", emptyMap())
+
+        assertThat(r).isInstanceOf(ToolResult.Err::class.java)
         assertThat((r as ToolResult.Err).code).isEqualTo("killed")
     }
 
