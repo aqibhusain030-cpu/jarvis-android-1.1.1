@@ -17,7 +17,8 @@ import com.jarvis.JarvisApplication
 import com.jarvis.MainActivity
 import com.jarvis.R
 import com.jarvis.autonomy.GoalEngine
-import com.jarvis.brain.BrainBridge
+import com.jarvis.command.CommandExecutionResult
+import com.jarvis.command.UniversalCommandEngine
 import com.jarvis.config.ConfigRepository
 import com.jarvis.logging.JarvisLogger
 import com.jarvis.memory.MemoryStore
@@ -38,7 +39,7 @@ class JarvisForegroundService : LifecycleService() {
     @Inject lateinit var vad: VoiceActivityDetector
     @Inject lateinit var stt: SpeechRecognizerBridge
     @Inject lateinit var tts: TextToSpeechBridge
-    @Inject lateinit var brain: BrainBridge
+    @Inject lateinit var commandEngine: UniversalCommandEngine
     @Inject lateinit var memory: MemoryStore
     @Inject lateinit var config: ConfigRepository
     @Inject lateinit var goals: GoalEngine
@@ -119,10 +120,15 @@ class JarvisForegroundService : LifecycleService() {
                 // A separate listener coroutine handles confirmation while brain.respond()
                 // is blocked awaiting the result of ToolDispatcher.confirmation.ask().
                 memory.appendMessage("user", text, config.current.value.defaultLanguage)
-                val reply = brain.respond(text)
+                val result = commandEngine.handle(text)
+                val spoken = when (result) {
+                    is CommandExecutionResult.Completed -> result.spokenText
+                    is CommandExecutionResult.Conversation -> result.spokenText
+                    is CommandExecutionResult.Failed -> result.spokenText
+                }
                 updateNotification(getString(R.string.svc_speaking))
-                tts.speak(reply.text)
-                memory.appendMessage("assistant", reply.text, reply.language)
+                tts.speak(spoken)
+                memory.appendMessage("assistant", spoken, config.current.value.defaultLanguage)
                 watchdog?.beat()
             } catch (ce: CancellationException) { throw ce }
             catch (t: Throwable) {
