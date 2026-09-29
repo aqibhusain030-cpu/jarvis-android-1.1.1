@@ -74,7 +74,7 @@ interface MemoryDao {
     @Query("""
         UPDATE learning_lessons
         SET failures = failures + 1,
-            confidence = MIN(1.0, confidence + :increment),
+            confidence = MAX(0.0, confidence - :decrement),
             updatedAt = :now
         WHERE fingerprint = :fingerprint
     """)
@@ -93,7 +93,6 @@ interface MemoryDao {
     @Query("""
         UPDATE learning_lessons
         SET correction = :correction,
-            confidence = MIN(1.0, confidence + :increment),
             updatedAt = :now
         WHERE fingerprint = :fingerprint
     """)
