@@ -5,7 +5,6 @@ plugins {
     id("org.jetbrains.kotlin.plugin.serialization")
     id("com.google.dagger.hilt.android")
     id("com.chaquo.python")
-    id("com.google.devtools.ksp")
     kotlin("kapt")
 }
 
