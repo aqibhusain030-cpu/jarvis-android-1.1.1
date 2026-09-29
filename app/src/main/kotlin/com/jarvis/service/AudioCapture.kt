@@ -25,6 +25,8 @@ class AudioCapture @Inject constructor(private val logger: JarvisLogger) {
     val sampleRate = 16_000
     val frameSize = 1280
 
+    fun isRunning(): Boolean = running
+
     @SuppressLint("MissingPermission")
     @Synchronized
     fun start() {
