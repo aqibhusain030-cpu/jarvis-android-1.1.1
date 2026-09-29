@@ -32,7 +32,8 @@ class ToolDispatcher @Inject constructor(
     private val config: ConfigRepository,
     private val killSwitch: KillSwitch,
     private val logger: JarvisLogger,
-    private val permissionGate: PermissionGate
+    private val permissionGate: PermissionGate,
+    private val memory: com.jarvis.memory.MemoryStore
 ) {
     private val authorizationMutex = Mutex()
 
@@ -47,27 +48,36 @@ class ToolDispatcher @Inject constructor(
         val validation = validateArgs(tool.spec, args)
         if (validation != null) {
             audit.log(name, args, validation.toJson(), false)
+            memory.recordMistake(name, "argument_validation", validation.code, validation.message)
             return validation
         }
 
         if (!policy.toolAllowed(name)) {
-            return ToolResult.Err("Tool disabled by policy: $name", "disabled")
+            return ToolResult.Err("Tool disabled by policy: $name", "disabled").also {
+                memory.recordMistake(name, "policy", "disabled", it.message)
+            }
         }
 
         val missingPermissions = permissionGate.missing(tool.spec)
         if (missingPermissions.isNotEmpty()) {
             return ToolResult.Err(
-                "Missing permission(s): ${missingPermissions.joinToString(", ")}",
+                "Missing permission(s): " + missingPermissions.joinToString(", "),
                 "permission_missing"
-            )
+            ).also {
+                memory.recordMistake(name, "permission", "permission_missing", it.message)
+            }
         }
 
         if (name in NETWORK_TOOLS && !policy.networkAllowed(name, args)) {
-            return ToolResult.Err("Network blocked by policy for $name", "network_denied")
+            return ToolResult.Err("Network blocked by policy for $name", "network_denied").also {
+                memory.recordMistake(name, "network", "network_denied", it.message)
+            }
         }
 
         if (!rateLimiter.allow(name, tool.spec.rateLimitPerHour)) {
-            return ToolResult.Err("Rate limit exceeded for $name", "rate_limited")
+            return ToolResult.Err("Rate limit exceeded for $name", "rate_limited").also {
+                memory.recordMistake(name, "rate_limit", "rate_limited", it.message)
+            }
         }
 
         val needsConfirm = policy.requiresConfirmation(name) ||
@@ -89,7 +99,10 @@ class ToolDispatcher @Inject constructor(
                     null
                 }
             }
-            if (authError != null) return authError
+            if (authError != null) {
+                if (authError is ToolResult.Err) memory.recordMistake(name, "authorization", authError.code, authError.message)
+                return authError
+            }
         }
 
         val result = try {
@@ -105,6 +118,7 @@ class ToolDispatcher @Inject constructor(
         }
 
         if (tool.spec.audit) audit.log(name, args, result.toJson(), true)
+        if (result is ToolResult.Err) memory.recordMistake(name, "execution", result.code, result.message)
         return result
     }
 
