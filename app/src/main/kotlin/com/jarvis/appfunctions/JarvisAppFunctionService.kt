@@ -1,6 +1,5 @@
 package com.jarvis.appfunctions
 
-import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.appfunctions.AppFunction
 import androidx.appfunctions.AppFunctionElementNotFoundException
@@ -25,7 +24,7 @@ import kotlinx.coroutines.withContext
  * Mutating and high-risk capabilities remain behind JARVIS SecurityPolicy,
  * PermissionGate, confirmation, and unlock controls and are not exposed here.
  */
-@RequiresApi(Build.VERSION_CODES.S)
+@RequiresApi(36)
 @AndroidEntryPoint
 @AppFunctionServiceEntryPoint(
     serviceName = "JarvisAppFunctionService",
