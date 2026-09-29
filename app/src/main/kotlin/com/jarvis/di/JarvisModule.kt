@@ -38,3 +38,34 @@ object JarvisModule {
         register(sys); register(weather)
     }
 }
+
+
+@dagger.Module
+@dagger.hilt.InstallIn(dagger.hilt.components.SingletonComponent::class)
+object CapabilityModule {
+    @dagger.Provides
+    @javax.inject.Singleton
+    fun capabilityBackends(
+        androidIntent: com.jarvis.capability.AndroidIntentBackend,
+        packages: com.jarvis.capability.PackageBackend,
+        accessibility: com.jarvis.capability.AccessibilityBackend,
+        notifications: com.jarvis.capability.NotificationBackend,
+        contacts: com.jarvis.capability.ContactsBackend,
+        calendar: com.jarvis.capability.CalendarBackend,
+        telephony: com.jarvis.capability.TelephonyBackend,
+        sms: com.jarvis.capability.SmsBackend,
+        media: com.jarvis.capability.MediaBackend,
+        camera: com.jarvis.capability.CameraBackend,
+        files: com.jarvis.capability.FileBackend,
+        network: com.jarvis.capability.NetworkBackend,
+        alarms: com.jarvis.capability.AlarmBackend,
+        bluetooth: com.jarvis.capability.BluetoothBackend,
+        wifi: com.jarvis.capability.WifiBackend,
+        location: com.jarvis.capability.LocationBackend,
+        appFunctions: com.jarvis.capability.FutureAppFunctionsBackend
+    ): Set<com.jarvis.capability.CapabilityBackend> = setOf(
+        androidIntent, packages, accessibility, notifications, contacts, calendar,
+        telephony, sms, media, camera, files, network, alarms, bluetooth, wifi,
+        location, appFunctions
+    )
+}
