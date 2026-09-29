@@ -66,16 +66,16 @@ class ToolBridgeKotlin @Inject constructor(
     private fun resultToJson(r: ToolResult): String = when (r) {
         is ToolResult.Ok -> {
             val obj = kotlinx.serialization.json.buildJsonObject {
-                put("ok", true)
-                put("data", r.data?.toString() ?: "")
+                put("ok", JsonPrimitive(true))
+                put("data", JsonPrimitive(r.data?.toString() ?: ""))
             }
             obj.toString()
         }
         is ToolResult.Err -> {
             val obj = kotlinx.serialization.json.buildJsonObject {
-                put("ok", false)
-                put("error", r.message)
-                put("code", r.code)
+                put("ok", JsonPrimitive(false))
+                put("error", JsonPrimitive(r.message))
+                put("code", JsonPrimitive(r.code))
             }
             obj.toString()
         }
