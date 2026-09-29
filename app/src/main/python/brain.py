@@ -121,74 +121,104 @@ def _run_tool(name: str, args: Dict[str, Any]) -> Dict[str, Any]:
         return {"ok": False, "error": str(exc), "code": "tool_exception"}
 
 
+def _extract_json_object(raw: str) -> Dict[str, Any]:
+    text = (raw or "").strip()
+    fenced = re.search(r"\\`\\`\\`(?:json)?\\s*(\\{.*?\\})\\s*\\`\\`\\`", text, re.DOTALL | re.IGNORECASE)
+    candidate = fenced.group(1) if fenced else text
+    try:
+        value = json.loads(candidate)
+        return value if isinstance(value, dict) else {}
+    except Exception:
+        pass
+    match = re.search(r"\\{.*\\}", text, re.DOTALL)
+    if match:
+        try:
+            value = json.loads(match.group(0))
+            return value if isinstance(value, dict) else {}
+        except Exception:
+            pass
+    return {}
+
+
+def _normalize_plan(value: Dict[str, Any], lang: str) -> Dict[str, Any]:
+    actions = value.get("actions")
+    if not isinstance(actions, list):
+        actions = []
+    out = []
+    seen = set()
+    for i, raw in enumerate(actions[:8]):
+        if not isinstance(raw, dict):
+            continue
+        tool = str(raw.get("tool") or "").strip()
+        action_id = str(raw.get("id") or f"action-{i + 1}").strip()
+        args = raw.get("args")
+        if not tool or not action_id or action_id in seen or not isinstance(args, dict):
+            continue
+        seen.add(action_id)
+        out.append({
+            "id": action_id,
+            "tool": tool,
+            "args": args,
+            "expectedEffect": str(raw.get("expectedEffect") or raw.get("expected_effect") or "").strip(),
+        })
+    return {
+        "understood": str(value.get("understood") or "").strip(),
+        "language": lang if lang in ("hi", "en", "hinglish") else "en",
+        "actions": out,
+    }
+
+
+def plan_command(payload_json: str) -> str:
+    payload = json.loads(payload_json)
+    text = str(payload.get("userText") or "").strip()
+    lang = str(payload.get("detectedLanguage") or detect_language(text))
+    history = payload.get("recentMessages", [])[-8:]
+    lessons = payload.get("lessons", [])[-8:]
+    system = load_prompt(f"system_{lang if lang in ('hi', 'en', 'hinglish') else 'hi'}")
+    schema = {
+        "understood": "one sentence describing the intended action",
+        "language": lang,
+        "actions": [{
+            "id": "action-1",
+            "tool": "exact_tool_name",
+            "args": {},
+            "expectedEffect": "specific effect after execution"
+        }]
+    }
+    prompt = (
+        f"{system}\\n\\n"
+        "You are JARVIS command planner. Return ONLY JSON. Never execute a tool. "
+        "Use only exact tool names from the catalog. Return actions=[] for conversation "
+        "that does not require an action. Make every argument explicit and deterministic.\\n\\n"
+        f"# SCHEMA\\n{json.dumps(schema, ensure_ascii=False)}\\n\\n"
+        f"# TOOLS\\n{_tool_block()}\\n\\n"
+        f"# LESSONS\\n{json.dumps(lessons, ensure_ascii=False)}\\n\\n"
+        f"# HISTORY\\n{json.dumps(history, ensure_ascii=False)}\\n\\n"
+        f"# USER\\n{text}\\n\\nJSON:"
+    )
+    raw = _llm_generate(prompt, max_tokens=900, temperature=0.05)
+    return json.dumps(_normalize_plan(_extract_json_object(raw), lang), ensure_ascii=False)
+
+
 def respond(payload_json: str) -> str:
     payload = json.loads(payload_json)
-    text = payload.get("userText", "")
-    lang = payload.get("detectedLanguage") or detect_language(text)
+    text = str(payload.get("userText") or "").strip()
+    lang = str(payload.get("detectedLanguage") or detect_language(text))
     history = payload.get("recentMessages", [])[-8:]
-
-    _mem.remember_message("user", text, lang)
-
+    lessons = payload.get("lessons", [])[-8:]
     system = load_prompt(f"system_{lang if lang in ('hi', 'en', 'hinglish') else 'hi'}")
-    context = _mem.build_context_block(text)
-    tools = _tool_block()
-
-    base = (
-        f"{system}\n\n# CONTEXT\n{context}\n\n"
-        f"{tools}\n\n"
-        f"# HISTORY\n" + "\n".join(history) + "\n\n"
-        f"# USER\n{text}\n\n# ASSISTANT\n"
+    prompt = (
+        f"{system}\\n\\n"
+        "Answer conversationally. Do not execute tools and do not emit tool calls. "
+        "Commands are handled by the Kotlin command engine.\\n\\n"
+        f"# LESSONS\\n{json.dumps(lessons, ensure_ascii=False)}\\n\\n"
+        f"# HISTORY\\n{json.dumps(history, ensure_ascii=False)}\\n\\n"
+        f"# USER\\n{text}\\n\\n# ASSISTANT\\n"
     )
-
-    tool_trace: List[str] = []
-    seen_tool_calls = set()
-    reply_text = ""
-    prompt = base
-
-    for _ in range(_MAX_TOOL_ROUNDS):
-        reply_text = _llm_generate(prompt, max_tokens=700, temperature=0.2)
-        if not reply_text.strip():
-            break
-        calls = _parse_tool_calls(reply_text)
-        if not calls:
-            # Strip any residual tool fences from final answer
-            clean = _TOOL_CALL_RE.sub("", reply_text)
-            clean = _TOOL_CALL_RE2.sub("", clean).strip()
-            reply_text = clean or reply_text
-            break
-        # Execute tools and continue
-        results = []
-        for c in calls:
-            args = c.get("args") or {}
-            call_id = _tool_call_id(c["name"], args)
-            if call_id in seen_tool_calls:
-                results.append({"tool": c["name"], "result": {"ok": False, "error": "duplicate tool call suppressed", "code": "duplicate_call"}})
-                continue
-            seen_tool_calls.add(call_id)
-            r = _run_tool(c["name"], args)
-            tool_trace.append(c["name"])
-            results.append({"id": call_id, "tool": c["name"], "result": r})
-        observation = json.dumps(results, ensure_ascii=False)
-        prompt = (
-            base
-            + f"\n# PREVIOUS ASSISTANT\n{reply_text}\n\n"
-            + f"# TOOL RESULTS\n{observation}\n\n"
-            + "# ASSISTANT (final answer for user, no more tools unless needed)\n"
-        )
-
-    if not (reply_text or "").strip():
-        reply_text = _fallback(lang, text)
-
-    _mem.remember_message("assistant", reply_text, lang)
-    return json.dumps(
-        {
-            "text": reply_text.strip(),
-            "language": lang,
-            "toolCalls": tool_trace,
-        },
-        ensure_ascii=False,
-    )
-
+    reply = _llm_generate(prompt, max_tokens=700, temperature=0.2).strip()
+    if not reply:
+        reply = _fallback(lang, text)
+    return json.dumps({"text": reply, "language": lang, "toolCalls": []}, ensure_ascii=False)
 
 def plan_goal(title: str, description: str) -> str:
     steps = plan(_llm_generate, title, description)
