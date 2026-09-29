@@ -105,6 +105,7 @@ class SecurityPolicy @Inject constructor(private val config: ConfigRepository) {
             if (host == "localhost" || host.endsWith(".local") || host.endsWith(".internal") ||
                 host.endsWith(".home.arpa") || host.endsWith(".lan")) return false
             if (isBlockedIpv4(host) || isBlockedIpv6(host)) return false
+            if (host.endsWith(".localhost") || host.endsWith(".test") || host.endsWith(".invalid")) return false
             true
         } catch (_: Exception) { false }
     }
