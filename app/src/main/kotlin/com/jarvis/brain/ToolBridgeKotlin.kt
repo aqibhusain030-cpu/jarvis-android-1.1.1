@@ -3,6 +3,7 @@ package com.jarvis.brain
 import com.jarvis.logging.JarvisLogger
 import com.jarvis.tools.ToolDispatcher
 import com.jarvis.tools.ToolResult
+import com.jarvis.tools.toJsonElement
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
@@ -14,15 +15,16 @@ import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.doubleOrNull
 import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonObject
-import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.longOrNull
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
  * Kotlin side of the Python tool bridge.
  * All requests go through ToolDispatcher, including schema validation and
- * authorization. Nested JSON is preserved instead of being stringified.
+ * authorization. Tool result payloads remain structured JSON.
  */
 @Singleton
 class ToolBridgeKotlin @Inject constructor(
@@ -45,11 +47,11 @@ class ToolBridgeKotlin @Inject constructor(
     private fun parseArgs(raw: String): Map<String, Any?> {
         if (raw.isBlank()) return emptyMap()
         val obj = json.parseToJsonElement(raw).jsonObject
-        return obj.mapValues { (_, v) -> elementToAny(v) }
+        return obj.mapValues { (_, value) -> elementToAny(value) }
     }
 
     private fun elementToAny(element: kotlinx.serialization.json.JsonElement): Any? = when (element) {
-        is JsonObject -> element.mapValues { (_, v) -> elementToAny(v) }
+        is JsonObject -> element.mapValues { (_, value) -> elementToAny(value) }
         is JsonArray -> element.map { elementToAny(it) }
         is JsonNull -> null
         is JsonPrimitive -> when {
@@ -63,22 +65,16 @@ class ToolBridgeKotlin @Inject constructor(
         else -> element.toString()
     }
 
-    private fun resultToJson(r: ToolResult): String = when (r) {
-        is ToolResult.Ok -> {
-            val obj = kotlinx.serialization.json.buildJsonObject {
-                put("ok", JsonPrimitive(true))
-                put("data", JsonPrimitive(r.data?.toString() ?: ""))
-            }
-            obj.toString()
-        }
-        is ToolResult.Err -> {
-            val obj = kotlinx.serialization.json.buildJsonObject {
-                put("ok", JsonPrimitive(false))
-                put("error", JsonPrimitive(r.message))
-                put("code", JsonPrimitive(r.code))
-            }
-            obj.toString()
-        }
+    private fun resultToJson(result: ToolResult): String = when (result) {
+        is ToolResult.Ok -> buildJsonObject {
+            put("ok", JsonPrimitive(true))
+            put("data", result.data.toJsonElement())
+        }.toString()
+        is ToolResult.Err -> buildJsonObject {
+            put("ok", JsonPrimitive(false))
+            put("error", JsonPrimitive(result.message))
+            put("code", JsonPrimitive(result.code))
+        }.toString()
     }
 
     companion object {
