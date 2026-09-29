@@ -11,7 +11,6 @@ from __future__ import annotations
 
 import json
 import re
-import hashlib
 from typing import Any, Dict, List, Optional
 
 from language import detect_language
@@ -21,7 +20,6 @@ from utils import load_prompt
 
 _mem = Memory()
 _llm: Any = None
-_tool_bridge: Any = None
 _tool_catalog: List[Dict[str, Any]] = []
 _MAX_TOOL_ROUNDS = 4
 
@@ -40,20 +38,9 @@ def set_llm(handle: Any) -> None:
     _llm = handle
 
 
-def install_tool_dispatcher(bridge: Any) -> None:
-    """Kotlin passes ToolBridgeKotlin instance; has .invoke(name, args_json)."""
-    global _tool_bridge
-    _tool_bridge = bridge
-    try:
-        import tools_bridge as tb
-
-        def _dispatch(name: str, args_json: str) -> str:
-            return str(bridge.invoke(name, args_json))
-
-        tb.set_dispatcher(_dispatch)
-    except Exception as exc:
-        _tool_bridge = None
-        raise RuntimeError(f"tool dispatcher installation failed: {exc}") from exc
+def install_tool_dispatcher(_bridge: Any) -> None:
+    """Compatibility hook. Python has no command execution authority."""
+    return None
 
 
 def set_tool_catalog(catalog_json: str) -> None:
@@ -87,84 +74,6 @@ def _tool_block() -> str:
         )
     return "\n".join(lines)
 
-
-def _parse_tool_calls(text: str) -> List[Dict[str, Any]]:
-    calls: List[Dict[str, Any]] = []
-    for rx in (_TOOL_CALL_RE, _TOOL_CALL_RE2):
-        for m in rx.finditer(text or ""):
-            try:
-                obj = json.loads(m.group(1))
-                if isinstance(obj, dict) and obj.get("name"):
-                    calls.append(
-                        {
-                            "name": str(obj["name"]),
-                            "args": obj.get("args") or obj.get("parameters") or {},
-                        }
-                    )
-            except Exception:
-                continue
-    return calls
-
-
-def _tool_call_id(name: str, args: Dict[str, Any]) -> str:
-    canonical = json.dumps({"name": name, "args": args}, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
-    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()[:16]
-
-
-def _run_tool(name: str, args: Dict[str, Any]) -> Dict[str, Any]:
-    if _tool_bridge is None:
-        return {"ok": False, "error": "no tool bridge", "code": "no_bridge"}
-    try:
-        raw = _tool_bridge.invoke(name, json.dumps(args, ensure_ascii=False))
-        return json.loads(raw) if isinstance(raw, str) else {"ok": False, "error": "bad result"}
-    except Exception as exc:
-        return {"ok": False, "error": str(exc), "code": "tool_exception"}
-
-
-def _extract_json_object(raw: str) -> Dict[str, Any]:
-    text = (raw or "").strip()
-    try:
-        value = json.loads(text)
-        return value if isinstance(value, dict) else {}
-    except Exception:
-        pass
-    start = text.find("{")
-    end = text.rfind("}")
-    if start >= 0 and end > start:
-        try:
-            value = json.loads(text[start:end + 1])
-            return value if isinstance(value, dict) else {}
-        except Exception:
-            pass
-    return {}
-
-
-def _normalize_plan(value: Dict[str, Any], lang: str) -> Dict[str, Any]:
-    actions = value.get("actions")
-    if not isinstance(actions, list):
-        actions = []
-    out = []
-    seen = set()
-    for i, raw in enumerate(actions[:8]):
-        if not isinstance(raw, dict):
-            continue
-        tool = str(raw.get("tool") or "").strip()
-        action_id = str(raw.get("id") or f"action-{i + 1}").strip()
-        args = raw.get("args")
-        if not tool or not action_id or action_id in seen or not isinstance(args, dict):
-            continue
-        seen.add(action_id)
-        out.append({
-            "id": action_id,
-            "tool": tool,
-            "args": args,
-            "expectedEffect": str(raw.get("expectedEffect") or raw.get("expected_effect") or "").strip(),
-        })
-    return {
-        "understood": str(value.get("understood") or "").strip(),
-        "language": lang if lang in ("hi", "en", "hinglish") else "en",
-        "actions": out,
-    }
 
 
 def plan_command(payload_json: str) -> str:
