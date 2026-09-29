@@ -48,7 +48,7 @@ class WakeWordAssetProvisioner @Inject constructor(
         target.parentFile?.mkdirs()
 
         if (target.exists() && sidecar.exists()) {
-            val digest = readDigest(sidecar)
+            val digest = readDigest(sidecar.readText())
             check(ModelChecksum.verify(target, digest)) {
                 "wake-word asset checksum mismatch: ${target.name}"
             }
