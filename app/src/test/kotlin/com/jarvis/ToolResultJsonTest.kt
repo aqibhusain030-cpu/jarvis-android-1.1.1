@@ -3,6 +3,8 @@ package com.jarvis
 import com.google.common.truth.Truth.assertThat
 import com.jarvis.tools.ToolResult
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.boolean
+import kotlinx.serialization.json.int
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import org.junit.Test
