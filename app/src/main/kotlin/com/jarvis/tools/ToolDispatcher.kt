@@ -36,8 +36,70 @@ class ToolDispatcher @Inject constructor(
     private val permissionGate: PermissionGate,
     private val memory: com.jarvis.memory.MemoryStore
 ) {
+    data class LockedAction(
+        val actionId: String,
+        val toolName: String,
+        val argsCanonical: String
+    )
+
+    private data class LockedPlan(
+        val expiresAtMs: Long,
+        val actions: Map<String, LockedAction>,
+        var confirmed: Boolean = false
+    )
+
+    private val lockedPlans = ConcurrentHashMap<String, LockedPlan>()
     private val authorizationMutex = Mutex()
     private val lastFailureByTool = ConcurrentHashMap<String, String>()
+
+    fun lockPlan(
+        planHash: String,
+        expiresAtMs: Long,
+        actions: List<LockedAction>,
+        nowMs: Long = System.currentTimeMillis()
+    ): Boolean {
+        if (planHash.length != 64 || actions.isEmpty() || expiresAtMs <= nowMs) return false
+        if (actions.map { it.actionId }.distinct().size != actions.size) return false
+        lockedPlans[planHash] = LockedPlan(expiresAtMs, actions.associateBy { it.actionId })
+        return true
+    }
+
+    fun confirmPlan(planHash: String, nowMs: Long = System.currentTimeMillis()): Boolean {
+        val plan = lockedPlans[planHash] ?: return false
+        if (nowMs >= plan.expiresAtMs) {
+            lockedPlans.remove(planHash, plan)
+            return false
+        }
+        plan.confirmed = true
+        return true
+    }
+
+    fun discardPlan(planHash: String) {
+        lockedPlans.remove(planHash)
+    }
+
+    suspend fun invokeLockedPlanAction(
+        planHash: String,
+        actionId: String,
+        name: String,
+        args: Map<String, Any?>
+    ): ToolResult = authorizationMutex.withLock {
+        val plan = lockedPlans[planHash]
+            ?: return@withLock ToolResult.Err("Execution plan not found", "plan_invalid")
+        if (!plan.confirmed) {
+            return@withLock ToolResult.Err("Execution plan has not been confirmed", "not_confirmed")
+        }
+        if (System.currentTimeMillis() >= plan.expiresAtMs) {
+            lockedPlans.remove(planHash, plan)
+            return@withLock ToolResult.Err("Execution plan expired", "plan_expired")
+        }
+        val locked = plan.actions[actionId]
+            ?: return@withLock ToolResult.Err("Action not found in confirmed plan", "action_invalid")
+        if (locked.toolName != name || locked.argsCanonical != ToolArgsCodec.canonical(args)) {
+            return@withLock ToolResult.Err("Action differs from confirmed plan", "plan_tampered")
+        }
+        executeAuthorized(name, args)
+    }
 
     suspend fun invoke(name: String, args: Map<String, Any?>): ToolResult {
         if (killSwitch.isKilled.value && name !in SAFE_WHILE_KILLED) {
