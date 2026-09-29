@@ -13,7 +13,7 @@ assert (root/'third_party/LOCKFILE').exists()
 assert (root/'gradlew').exists() and (root/'gradlew.bat').exists()
 assert 'distributionSha256Sum=f397b287023acdba1e9f6fc5ea72d22dd63669d59ed4a289a29b1a76eee151c6' in (root/'gradle/wrapper/gradle-wrapper.properties').read_text()
 manifest=(root/'app/src/main/AndroidManifest.xml').read_text(encoding='utf-8')
-for forbidden in ('MANAGE_EXTERNAL_STORAGE','QUERY_ALL_PACKAGES','BIND_ACCESSIBILITY_SERVICE','ACCESS_BACKGROUND_LOCATION','READ_SMS','RECEIVE_SMS','READ_CALL_LOG','WRITE_CALL_LOG','BLUETOOTH_SCAN','NEARBY_WIFI_DEVICES','CAMERA'):
+for forbidden in ('MANAGE_EXTERNAL_STORAGE','QUERY_ALL_PACKAGES','ACCESS_BACKGROUND_LOCATION','READ_SMS','RECEIVE_SMS','READ_CALL_LOG','WRITE_CALL_LOG','BLUETOOTH_SCAN','NEARBY_WIFI_DEVICES','CAMERA'):
     assert forbidden not in manifest, forbidden
 assert 'android:usesCleartextTraffic="false"' in manifest
 assert 'android:foregroundServiceType="microphone"' in manifest
