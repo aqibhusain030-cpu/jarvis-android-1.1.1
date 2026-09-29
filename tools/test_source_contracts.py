@@ -73,7 +73,6 @@ assert "WakeRecognitionState.TRIGGERED" in wake_detector
 assert "WakeRecognitionState.ERROR" in wake_detector
 assert "SystemClock.elapsedRealtime()" in wake_detector
 
-appfn = read("app/src/main/kotlin/com/jarvis/appfunctions/JarvisAppFunctionService.kt")
 appfn_manifest = read("app/src/main/AndroidManifest.xml")
 appfn_metadata = read("app/src/main/res/xml/app_metadata.xml")
 assert "@AppFunctionServiceEntryPoint" in appfn
