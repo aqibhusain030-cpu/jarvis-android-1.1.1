@@ -6,7 +6,7 @@ import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
 import javax.inject.Singleton
 
-/** Token-bucket-ish limiter; counts calls in the last 3600 s per tool. */
+/** Sliding-window limiter; counts calls in the last 3600 s per tool. */
 @Singleton
 class RateLimiter @Inject constructor(private val config: ConfigRepository) {
     private val history = ConcurrentHashMap<String, ArrayDeque<Long>>()
@@ -16,9 +16,18 @@ class RateLimiter @Inject constructor(private val config: ConfigRepository) {
         val now = System.currentTimeMillis()
         val q = history.getOrPut(tool) { ArrayDeque() }
         synchronized(q) {
-            while (q.isNotEmpty() && now - q.peekFirst() > 3_600_000) q.removeFirst()
+            while (true) {
+                val first = q.peekFirst() ?: break
+                if (now - first <= WINDOW_MS) break
+                q.removeFirst()
+            }
             if (q.size >= perHour) return false
-            q.addLast(now); return true
+            q.addLast(now)
+            return true
         }
+    }
+
+    companion object {
+        private const val WINDOW_MS = 3_600_000L
     }
 }
