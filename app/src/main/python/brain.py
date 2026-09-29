@@ -123,17 +123,16 @@ def _run_tool(name: str, args: Dict[str, Any]) -> Dict[str, Any]:
 
 def _extract_json_object(raw: str) -> Dict[str, Any]:
     text = (raw or "").strip()
-    fenced = re.search(r"\\`\\`\\`(?:json)?\\s*(\\{.*?\\})\\s*\\`\\`\\`", text, re.DOTALL | re.IGNORECASE)
-    candidate = fenced.group(1) if fenced else text
     try:
-        value = json.loads(candidate)
+        value = json.loads(text)
         return value if isinstance(value, dict) else {}
     except Exception:
         pass
-    match = re.search(r"\\{.*\\}", text, re.DOTALL)
-    if match:
+    start = text.find("{")
+    end = text.rfind("}")
+    if start >= 0 and end > start:
         try:
-            value = json.loads(match.group(0))
+            value = json.loads(text[start:end + 1])
             return value if isinstance(value, dict) else {}
         except Exception:
             pass
@@ -186,15 +185,15 @@ def plan_command(payload_json: str) -> str:
         }]
     }
     prompt = (
-        f"{system}\\n\\n"
+        f"{system}\n\n"
         "You are JARVIS command planner. Return ONLY JSON. Never execute a tool. "
         "Use only exact tool names from the catalog. Return actions=[] for conversation "
-        "that does not require an action. Make every argument explicit and deterministic.\\n\\n"
-        f"# SCHEMA\\n{json.dumps(schema, ensure_ascii=False)}\\n\\n"
-        f"# TOOLS\\n{_tool_block()}\\n\\n"
-        f"# LESSONS\\n{json.dumps(lessons, ensure_ascii=False)}\\n\\n"
-        f"# HISTORY\\n{json.dumps(history, ensure_ascii=False)}\\n\\n"
-        f"# USER\\n{text}\\n\\nJSON:"
+        "that does not require an action. Make every argument explicit and deterministic.\n\n"
+        f"# SCHEMA\n{json.dumps(schema, ensure_ascii=False)}\n\n"
+        f"# TOOLS\n{_tool_block()}\n\n"
+        f"# LESSONS\n{json.dumps(lessons, ensure_ascii=False)}\n\n"
+        f"# HISTORY\n{json.dumps(history, ensure_ascii=False)}\n\n"
+        f"# USER\n{text}\n\nJSON:"
     )
     raw = _llm_generate(prompt, max_tokens=900, temperature=0.05)
     return json.dumps(_normalize_plan(_extract_json_object(raw), lang), ensure_ascii=False)
@@ -208,12 +207,12 @@ def respond(payload_json: str) -> str:
     lessons = payload.get("lessons", [])[-8:]
     system = load_prompt(f"system_{lang if lang in ('hi', 'en', 'hinglish') else 'hi'}")
     prompt = (
-        f"{system}\\n\\n"
+        f"{system}\n\n"
         "Answer conversationally. Do not execute tools and do not emit tool calls. "
-        "Commands are handled by the Kotlin command engine.\\n\\n"
-        f"# LESSONS\\n{json.dumps(lessons, ensure_ascii=False)}\\n\\n"
-        f"# HISTORY\\n{json.dumps(history, ensure_ascii=False)}\\n\\n"
-        f"# USER\\n{text}\\n\\n# ASSISTANT\\n"
+        "Commands are handled by the Kotlin command engine.\n\n"
+        f"# LESSONS\n{json.dumps(lessons, ensure_ascii=False)}\n\n"
+        f"# HISTORY\n{json.dumps(history, ensure_ascii=False)}\n\n"
+        f"# USER\n{text}\n\n# ASSISTANT\n"
     )
     reply = _llm_generate(prompt, max_tokens=700, temperature=0.2).strip()
     if not reply:
