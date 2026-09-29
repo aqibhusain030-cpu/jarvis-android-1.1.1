@@ -1,4 +1,5 @@
 {
+  "schema_version": 1,
   "agent": {
     "name": "JARVIS",
     "user_name": "Sir",
