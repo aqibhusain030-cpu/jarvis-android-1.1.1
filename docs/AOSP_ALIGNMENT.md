@@ -4,17 +4,9 @@ This document records which AOSP platform practices are intentionally adopted by
 
 ## Adopted now
 
-### AppFunctions
+### AppFunctions integration boundary
 
-JARVIS exposes a narrow, read-only AppFunctions surface through the Android 16-compatible Jetpack AppFunctions API:
-
-- `getJarvisStatus`
-- `listGoals`
-- `getGoal`
-
-The implementation uses the compile-time `AppFunctionServiceEntryPoint` architecture, KSP-generated metadata, inline KDoc for serializable properties, background coroutine execution, and explicit AppFunction exceptions for invalid or missing requests.
-
-The AppFunctions surface deliberately does not expose SMS, calls, contacts, location, notification contents, shell execution, policy mutation, kill-switch bypass, memory deletion, or arbitrary ToolDispatcher execution.
+JARVIS is architected to expose a narrow, read-only AppFunctions surface when the project upgrades to the required AndroidX AppFunctions toolchain. The current verified build intentionally does not ship the dependency because the current AGP 8.10.1/API 36 toolchain cannot satisfy the AppFunctions alpha10+ requirement for AGP 9.1+ and compileSdk 37. The planned functions are `getJarvisStatus`, `listGoals`, and `getGoal`; high-risk or mutating actions remain behind JARVIS security controls.
 
 ## Adopted as engineering practice
 
