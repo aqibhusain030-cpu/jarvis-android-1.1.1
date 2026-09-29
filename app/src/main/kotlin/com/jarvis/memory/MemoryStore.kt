@@ -71,8 +71,10 @@ class MemoryStore @Inject constructor(
         val fingerprint = java.security.MessageDigest.getInstance("SHA-256")
             .digest(normalized.toByteArray(Charsets.UTF_8))
             .joinToString("") { "%02x".format(it) }
+
         val existing = db.dao().searchLearning(tool, 100)
             .firstOrNull { it.fingerprint == fingerprint }
+
         if (existing == null) {
             db.dao().upsertLearningLesson(
                 LearningLessonEntity(
@@ -94,11 +96,11 @@ class MemoryStore @Inject constructor(
                 db.dao().setLearningCorrection(
                     fingerprint = fingerprint,
                     correction = correction.take(1024),
-                    increment = 0.15f,
                     now = System.currentTimeMillis()
                 )
             }
         }
+
         db.dao().pruneLearningLessons(
             System.currentTimeMillis() - 90L * 86_400_000L
         )
