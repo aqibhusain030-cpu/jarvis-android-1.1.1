@@ -4,6 +4,8 @@ import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
+import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
 import com.jarvis.autonomy.Goal
 import com.jarvis.autonomy.GoalStatus
 import com.jarvis.autonomy.PlanStep
@@ -21,14 +23,10 @@ import javax.inject.Singleton
 @Database(
     entities = [MemoryEntity::class, MessageEntity::class, KvEntity::class,
         GoalEntity::class, TaskEventEntity::class],
-    version = 1, exportSchema = false
+    version = 2, exportSchema = false
 )
 abstract class JarvisDb : RoomDatabase() { abstract fun dao(): MemoryDao }
 
-/**
- * High-level memory façade: facts, messages, goals, KV. WAL is enabled for
- * multi-process safety. All access is off the main thread.
- */
 @Singleton
 class MemoryStore @Inject constructor(
     @ApplicationContext private val ctx: Context,
@@ -42,6 +40,7 @@ class MemoryStore @Inject constructor(
         if (::db.isInitialized) return
         db = Room.databaseBuilder(ctx, JarvisDb::class.java, "jarvis.db")
             .setJournalMode(RoomDatabase.JournalMode.WRITE_AHEAD_LOGGING)
+            .addMigrations(MIGRATION_1_2)
             .build()
         logger.i(TAG, "memory opened")
     }
@@ -66,18 +65,27 @@ class MemoryStore @Inject constructor(
         }
 
     suspend fun recentContext(limit: Int = 12): List<String> = withContext(Dispatchers.IO) {
-        db.dao().recentMessages(limit).reversed().map { "${it.role}: ${it.content}" }
+        db.dao().recentMessages(limit).reversed().map { "\${it.role}: \${it.content}" }
     }
 
     suspend fun putGoal(goal: Goal) = withContext(Dispatchers.IO) {
         db.dao().upsertGoal(GoalEntity(
-            id = goal.id, title = goal.title, description = goal.description,
-            language = goal.language, priority = goal.priority, deadline = goal.deadline,
+            id = goal.id,
+            title = goal.title,
+            description = goal.description,
+            language = goal.language,
+            priority = goal.priority,
+            deadline = goal.deadline,
             status = goal.status.name,
             planJson = json.encodeToString(ListSerializer(PlanStep.serializer()), goal.plan),
             evidenceJson = json.encodeToString(ListSerializer(String.serializer()), goal.evidence),
             triggersJson = json.encodeToString(ListSerializer(Trigger.serializer()), goal.triggers),
-            createdAt = goal.createdAt, updatedAt = goal.updatedAt
+            createdAt = goal.createdAt,
+            updatedAt = goal.updatedAt,
+            checkIntervalSeconds = goal.checkIntervalSeconds,
+            maxRetries = goal.maxRetries,
+            maxRuntimeSeconds = goal.maxRuntimeSeconds,
+            confirmationRequired = goal.confirmationRequired
         ))
     }
 
@@ -87,30 +95,50 @@ class MemoryStore @Inject constructor(
         }
 
     suspend fun getGoal(id: String): Goal? = withContext(Dispatchers.IO) {
-        db.dao().goal(id)?.let {
-            Goal(
-                id = it.id, title = it.title, description = it.description,
-                language = it.language, priority = it.priority, deadline = it.deadline,
-                status = GoalStatus.valueOf(it.status),
-                plan = json.decodeFromString(ListSerializer(PlanStep.serializer()), it.planJson),
-                evidence = json.decodeFromString(ListSerializer(String.serializer()), it.evidenceJson),
-                triggers = json.decodeFromString(ListSerializer(Trigger.serializer()), it.triggersJson),
-                createdAt = it.createdAt, updatedAt = it.updatedAt
-            )
-        }
+        db.dao().goal(id)?.toGoal()
     }
 
     suspend fun runningGoals(): List<Goal> = withContext(Dispatchers.IO) {
-        db.dao().goalsByStatus(GoalStatus.RUNNING.name).map {
-            Goal(
-                id = it.id, title = it.title, description = it.description,
-                language = it.language, priority = it.priority, deadline = it.deadline,
-                status = GoalStatus.valueOf(it.status),
-                plan = json.decodeFromString(ListSerializer(PlanStep.serializer()), it.planJson),
-                createdAt = it.createdAt, updatedAt = it.updatedAt
-            )
-        }
+        db.dao().goalsByStatus(GoalStatus.RUNNING.name).map { it.toGoal() }
     }
 
-    companion object { private const val TAG = "MemoryStore" }
+    suspend fun resumableGoals(): List<Goal> = withContext(Dispatchers.IO) {
+        db.dao().resumableGoals().map { it.toGoal() }
+    }
+
+    suspend fun allGoals(): List<Goal> = withContext(Dispatchers.IO) {
+        db.dao().allGoals().map { it.toGoal() }
+    }
+
+    private fun GoalEntity.toGoal(): Goal = Goal(
+        id = id,
+        title = title,
+        description = description,
+        language = language,
+        priority = priority,
+        deadline = deadline,
+        status = GoalStatus.valueOf(status),
+        plan = json.decodeFromString(ListSerializer(PlanStep.serializer()), planJson),
+        evidence = json.decodeFromString(ListSerializer(String.serializer()), evidenceJson),
+        triggers = json.decodeFromString(ListSerializer(Trigger.serializer()), triggersJson),
+        createdAt = createdAt,
+        updatedAt = updatedAt,
+        checkIntervalSeconds = checkIntervalSeconds,
+        maxRetries = maxRetries,
+        maxRuntimeSeconds = maxRuntimeSeconds,
+        confirmationRequired = confirmationRequired
+    )
+
+    companion object {
+        private const val TAG = "MemoryStore"
+
+        private val MIGRATION_1_2 = object : Migration(1, 2) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE goal_records ADD COLUMN checkIntervalSeconds INTEGER")
+                db.execSQL("ALTER TABLE goal_records ADD COLUMN maxRetries INTEGER NOT NULL DEFAULT 3")
+                db.execSQL("ALTER TABLE goal_records ADD COLUMN maxRuntimeSeconds INTEGER NOT NULL DEFAULT 86400")
+                db.execSQL("ALTER TABLE goal_records ADD COLUMN confirmationRequired INTEGER NOT NULL DEFAULT 1")
+            }
+        }
+    }
 }
