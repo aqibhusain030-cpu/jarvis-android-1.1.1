@@ -43,7 +43,11 @@ data class GoalEntity(
     val evidenceJson: String,
     val triggersJson: String,
     val createdAt: Long,
-    val updatedAt: Long
+    val updatedAt: Long,
+    val checkIntervalSeconds: Long?,
+    val maxRetries: Int,
+    val maxRuntimeSeconds: Long,
+    val confirmationRequired: Boolean
 )
 
 @Entity(tableName = "task_events")
