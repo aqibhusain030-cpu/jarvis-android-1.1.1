@@ -40,7 +40,7 @@ class MemoryStore @Inject constructor(
         if (::db.isInitialized) return
         db = Room.databaseBuilder(ctx, JarvisDb::class.java, "jarvis.db")
             .setJournalMode(RoomDatabase.JournalMode.WRITE_AHEAD_LOGGING)
-            .addMigrations(MIGRATION_1_2)
+            .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
             .build()
         logger.i(TAG, "memory opened")
     }
@@ -57,6 +57,65 @@ class MemoryStore @Inject constructor(
     suspend fun search(query: String, limit: Int = 20) = withContext(Dispatchers.IO) {
         db.dao().search(query, limit)
     }
+
+    suspend fun recordMistake(
+        tool: String,
+        context: String,
+        errorCode: String,
+        errorMessage: String,
+        correction: String = ""
+    ) = withContext(Dispatchers.IO) {
+        val normalized = listOf(tool, context, errorCode).joinToString("|") {
+            it.trim().lowercase().take(256)
+        }
+        val fingerprint = java.security.MessageDigest.getInstance("SHA-256")
+            .digest(normalized.toByteArray(Charsets.UTF_8))
+            .joinToString("") { "%02x".format(it) }
+        val existing = db.dao().searchLearning(tool, 100)
+            .firstOrNull { it.fingerprint == fingerprint }
+        if (existing == null) {
+            db.dao().upsertLearningLesson(
+                LearningLessonEntity(
+                    fingerprint = fingerprint,
+                    tool = tool.take(128),
+                    context = context.take(512),
+                    errorCode = errorCode.take(128),
+                    errorMessage = errorMessage.take(1024),
+                    correction = correction.take(1024)
+                )
+            )
+        } else {
+            db.dao().incrementLearningFailure(
+                fingerprint = fingerprint,
+                decrement = 0.05f,
+                now = System.currentTimeMillis()
+            )
+            if (correction.isNotBlank()) {
+                db.dao().setLearningCorrection(
+                    fingerprint = fingerprint,
+                    correction = correction.take(1024),
+                    increment = 0.15f,
+                    now = System.currentTimeMillis()
+                )
+            }
+        }
+        db.dao().pruneLearningLessons(
+            System.currentTimeMillis() - 90L * 86_400_000L
+        )
+    }
+
+    suspend fun recordLessonSuccess(fingerprint: String) = withContext(Dispatchers.IO) {
+        db.dao().incrementLearningSuccess(
+            fingerprint = fingerprint,
+            increment = 0.10f,
+            now = System.currentTimeMillis()
+        )
+    }
+
+    suspend fun relevantLessons(query: String, limit: Int = 5): List<LearningLessonEntity> =
+        withContext(Dispatchers.IO) {
+            db.dao().searchLearning(query.take(256), limit)
+        }
 
     suspend fun appendMessage(role: String, content: String, lang: String) =
         withContext(Dispatchers.IO) {
@@ -138,6 +197,29 @@ class MemoryStore @Inject constructor(
                 db.execSQL("ALTER TABLE goal_records ADD COLUMN maxRetries INTEGER NOT NULL DEFAULT 3")
                 db.execSQL("ALTER TABLE goal_records ADD COLUMN maxRuntimeSeconds INTEGER NOT NULL DEFAULT 86400")
                 db.execSQL("ALTER TABLE goal_records ADD COLUMN confirmationRequired INTEGER NOT NULL DEFAULT 1")
+            }
+        }
+
+        private val MIGRATION_2_3 = object : Migration(2, 3) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS learning_lessons (
+                        fingerprint TEXT NOT NULL PRIMARY KEY,
+                        tool TEXT NOT NULL,
+                        context TEXT NOT NULL,
+                        errorCode TEXT NOT NULL,
+                        errorMessage TEXT NOT NULL,
+                        correction TEXT NOT NULL,
+                        failures INTEGER NOT NULL DEFAULT 1,
+                        successes INTEGER NOT NULL DEFAULT 0,
+                        confidence REAL NOT NULL DEFAULT 0.0,
+                        createdAt INTEGER NOT NULL,
+                        updatedAt INTEGER NOT NULL,
+                        lastSuccessAt INTEGER
+                    )
+                """.trimIndent())
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_learning_lessons_tool ON learning_lessons(tool)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_learning_lessons_updatedAt ON learning_lessons(updatedAt)")
             }
         }
     }
