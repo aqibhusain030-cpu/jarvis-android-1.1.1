@@ -66,8 +66,8 @@ chaquopy {
 }
 
 dependencies {
-    implementation("androidx.appfunctions:appfunctions:1.0.0-alpha10")
-    ksp("androidx.appfunctions:appfunctions-compiler:1.0.0-alpha10")
+    implementation("androidx.appfunctions:appfunctions:1.0.0-alpha12")
+    ksp("androidx.appfunctions:appfunctions-compiler:1.0.0-alpha12")
     implementation("androidx.core:core-ktx:1.13.1")
     implementation("androidx.appcompat:appcompat:1.7.0")
     implementation("androidx.activity:activity-compose:1.9.2")
