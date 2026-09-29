@@ -54,4 +54,42 @@ interface MemoryDao {
 
     @Insert
     fun insertEvent(e: TaskEventEntity): Long
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    fun upsertLearningLesson(lesson: LearningLessonEntity)
+
+    @Query("SELECT * FROM learning_lessons WHERE tool = :tool ORDER BY confidence DESC, updatedAt DESC LIMIT :limit")
+    fun learningForTool(tool: String, limit: Int): List<LearningLessonEntity>
+
+    @Query("""
+        SELECT * FROM learning_lessons
+        WHERE context LIKE '%' || :query || '%'
+           OR errorMessage LIKE '%' || :query || '%'
+           OR correction LIKE '%' || :query || '%'
+        ORDER BY confidence DESC, updatedAt DESC
+        LIMIT :limit
+    """)
+    fun searchLearning(query: String, limit: Int): List<LearningLessonEntity>
+
+    @Query("""
+        UPDATE learning_lessons
+        SET failures = failures + 1,
+            confidence = MIN(1.0, confidence + :increment),
+            updatedAt = :now
+        WHERE fingerprint = :fingerprint
+    """)
+    fun incrementLearningFailure(fingerprint: String, increment: Float, now: Long)
+
+    @Query("""
+        UPDATE learning_lessons
+        SET successes = successes + 1,
+            confidence = MIN(1.0, confidence + :increment),
+            updatedAt = :now,
+            lastSuccessAt = :now
+        WHERE fingerprint = :fingerprint
+    """)
+    fun incrementLearningSuccess(fingerprint: String, increment: Float, now: Long)
+
+    @Query("DELETE FROM learning_lessons WHERE updatedAt < :cutoff")
+    fun pruneLearningLessons(cutoff: Long): Int
 }
