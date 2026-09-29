@@ -99,7 +99,6 @@ interface MemoryDao {
     fun setLearningCorrection(
         fingerprint: String,
         correction: String,
-        increment: Float,
         now: Long
     )
 
