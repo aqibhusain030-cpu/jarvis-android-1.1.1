@@ -43,6 +43,12 @@ interface MemoryDao {
     @Query("SELECT * FROM goal_records WHERE status = :status ORDER BY priority DESC, createdAt ASC")
     fun goalsByStatus(status: String): List<GoalEntity>
 
+    @Query("SELECT * FROM goal_records WHERE status IN ('RUNNING', 'PENDING') ORDER BY priority DESC, createdAt ASC")
+    fun resumableGoals(): List<GoalEntity>
+
+    @Query("SELECT * FROM goal_records ORDER BY priority DESC, createdAt ASC")
+    fun allGoals(): List<GoalEntity>
+
     @Query("SELECT * FROM goal_records WHERE id = :id")
     fun goal(id: String): GoalEntity?
 
