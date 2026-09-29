@@ -11,6 +11,7 @@ import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withTimeout
+import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -36,6 +37,7 @@ class ToolDispatcher @Inject constructor(
     private val memory: com.jarvis.memory.MemoryStore
 ) {
     private val authorizationMutex = Mutex()
+    private val lastFailureByTool = ConcurrentHashMap<String, String>()
 
     suspend fun invoke(name: String, args: Map<String, Any?>): ToolResult {
         if (killSwitch.isKilled.value && name !in SAFE_WHILE_KILLED) {
@@ -118,7 +120,11 @@ class ToolDispatcher @Inject constructor(
         }
 
         if (tool.spec.audit) audit.log(name, args, result.toJson(), true)
-        if (result is ToolResult.Err) memory.recordMistake(name, "execution", result.code, result.message)
+        if (result is ToolResult.Err) {
+            lastFailureByTool[name] = memory.recordMistake(name, "execution", result.code, result.message)
+        } else {
+            lastFailureByTool.remove(name)?.let { memory.recordLessonSuccess(it) }
+        }
         return result
     }
 
