@@ -64,7 +64,7 @@ class MemoryStore @Inject constructor(
         errorCode: String,
         errorMessage: String,
         correction: String = ""
-    ) = withContext(Dispatchers.IO) {
+    ): String = withContext(Dispatchers.IO) {
         val normalized = listOf(tool, context, errorCode).joinToString("|") {
             it.trim().lowercase().take(256)
         }
@@ -102,6 +102,7 @@ class MemoryStore @Inject constructor(
         db.dao().pruneLearningLessons(
             System.currentTimeMillis() - 90L * 86_400_000L
         )
+        fingerprint
     }
 
     suspend fun recordLessonSuccess(fingerprint: String) = withContext(Dispatchers.IO) {
