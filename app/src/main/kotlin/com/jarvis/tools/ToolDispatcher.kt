@@ -50,7 +50,7 @@ class ToolDispatcher @Inject constructor(
 
     private val lockedPlans = ConcurrentHashMap<String, LockedPlan>()
     private val authorizationMutex = Mutex()
-    private val lastFailureByTool = ConcurrentHashMap<String, String>()
+    private val lastFailureByInvocation = ConcurrentHashMap<String, String>()
 
     fun lockPlan(
         planHash: String,
@@ -185,10 +185,13 @@ class ToolDispatcher @Inject constructor(
         if (result is ToolResult.Err) {
             lastFailureByTool[name] = memory.recordMistake(name, "execution", result.code, result.message)
         } else {
-            lastFailureByTool.remove(name)?.let { memory.recordLessonSuccess(it) }
+            lastFailureByInvocation.remove(learningKey(name, args))?.let { memory.recordLessonSuccess(it) }
         }
         return result
     }
+
+    private fun learningKey(name: String, args: Map<String, Any?>): String =
+        name + "|" + ToolArgsCodec.canonical(args)
 
     private fun validateArgs(spec: ToolSpec, args: Map<String, Any?>): ToolResult.Err? {
         val unknown = args.keys - spec.parameters.keys
