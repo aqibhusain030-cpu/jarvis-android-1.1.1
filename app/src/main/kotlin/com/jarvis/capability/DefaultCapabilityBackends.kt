@@ -6,7 +6,7 @@ private abstract class Backend(final override val id:String,private val label:St
 }
 @Singleton class AndroidIntentBackend @Inject constructor():Backend("android.intent","Android intents",listOf("app.open","url.open"),listOf("open_app","open_url"))
 @Singleton class PackageBackend @Inject constructor():Backend("android.packages","Packages",listOf("app.resolve"),listOf("open_app"))
-@Singleton class AccessibilityBackend @Inject constructor():Backend("android.accessibility","Accessibility",listOf("ui.inspect","ui.click","ui.type","ui.scroll","ui.back","ui.home"),platform=true)
+@Singleton class AccessibilityBackend @Inject constructor():Backend("android.accessibility","Accessibility",listOf("ui.inspect","ui.click","ui.type","ui.scroll","ui.back","ui.home"),listOf("accessibility_action"),true)
 @Singleton class NotificationBackend @Inject constructor():Backend("android.notifications","Notifications",listOf("notification.list","notification.reply"),listOf("list_notifications","reply_notification"))
 @Singleton class ContactsBackend @Inject constructor():Backend("android.contacts","Contacts",listOf("contact.lookup"),listOf("contact_lookup"))
 @Singleton class CalendarBackend @Inject constructor():Backend("android.calendar","Calendar",listOf("calendar.read"),listOf("calendar_read"))
