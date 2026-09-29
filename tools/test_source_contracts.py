@@ -65,6 +65,18 @@ assert 'No unverified embedding or vision checkpoint added' in read("docs/APPLE_
 assert 'lastFailureByTool' in dispatcher
 assert 'recordLessonSuccess' in dispatcher
 assert 'learning_lessons' in dao
+appfn = read("app/src/main/kotlin/com/jarvis/appfunctions/JarvisAppFunctionService.kt")
+appfn_manifest = read("app/src/main/AndroidManifest.xml")
+appfn_metadata = read("app/src/main/res/xml/app_metadata.xml")
+assert "@AppFunctionServiceEntryPoint" in appfn
+assert '@AppFunction(isDescribedByKDoc = true)' in appfn
+assert "getJarvisStatus" in appfn and "listGoals" in appfn and "getGoal" in appfn
+assert "@AppFunctionSerializable(isDescribedByKDoc = true)" in appfn
+assert 'android.permission.BIND_APP_FUNCTION_SERVICE' in appfn_manifest
+assert 'android.app.appfunctions.v2' in appfn_manifest
+assert 'android.app.appfunctions.app_metadata' in appfn_manifest
+assert "<AppFunctionAppMetadata" in appfn_metadata
+
 assert 'currentCoroutineContext().isActive' in wake
 assert 'audio.isRunning()' in wake
 assert 'Local STT unavailable; transcript dropped' in read("app/src/main/kotlin/com/jarvis/voice/SpeechRecognizerBridge.kt")
