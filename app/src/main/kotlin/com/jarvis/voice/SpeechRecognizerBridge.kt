@@ -10,10 +10,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
 
-/**
- * STT façade. Prefers on-device whisper.cpp; falls back to Android's
- * SpeechRecognizer only if whisper fails to init.
- */
+/** On-device STT façade backed by the locked whisper.cpp model. */
 @Singleton
 class SpeechRecognizerBridge @Inject constructor(
     @ApplicationContext private val ctx: Context,
@@ -37,16 +34,18 @@ class SpeechRecognizerBridge @Inject constructor(
     }
 
     fun transcribe(pcm: ByteArray): String {
-        if (!ensureReady()) return fallback(pcm)
+        if (!ensureReady()) {
+            logger.w(TAG, "Local STT unavailable; transcript dropped")
+            return ""
+        }
         val lang = when (config.current.value.sttLanguage) {
             "auto", "" -> "auto"; else -> config.current.value.sttLanguage
         }
-        return whisper.transcribe(pcm, lang)
+        return runCatching { whisper.transcribe(pcm, lang) }
+            .onFailure { logger.e(TAG, "Whisper transcription failed", it) }
+            .getOrDefault("")
     }
 
-    private fun fallback(pcm: ByteArray): String {
-        logger.w(TAG, "STT fallback invoked for ${pcm.size} bytes"); return ""
-    }
 
     fun close() {
         if (ready) {
