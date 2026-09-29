@@ -5,9 +5,11 @@
     <string name="svc_listening">Listening for "Hey JARVIS"…</string>
     <string name="svc_thinking">Thinking…</string>
     <string name="svc_speaking">Speaking…</string>
+    <string name="svc_killed">Kill switch activated</string>
     <string name="reply_yes_sir">Yes, Sir?</string>
     <string name="reply_didnt_catch">I didn\'t catch that, Sir.</string>
     <string name="reply_error">Sorry Sir, something went wrong.</string>
+    <string name="reply_killed">JARVIS has been stopped.</string>
     <string name="action_stop">Stop</string>
     <string name="action_start">Start</string>
     <string name="action_resume">Resume</string>

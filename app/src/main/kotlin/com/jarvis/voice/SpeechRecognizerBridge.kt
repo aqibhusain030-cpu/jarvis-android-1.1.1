@@ -47,5 +47,12 @@ class SpeechRecognizerBridge @Inject constructor(
     private fun fallback(pcm: ByteArray): String {
         logger.w(TAG, "STT fallback invoked for ${pcm.size} bytes"); return ""
     }
+
+    fun close() {
+        if (ready) {
+            runCatching { whisper.close() }
+            ready = false
+        }
+    }
     companion object { private const val TAG = "SpeechRecognizerBridge" }
 }
