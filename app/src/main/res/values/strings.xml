@@ -2,13 +2,19 @@
 <resources>
     <string name="app_name">JARVIS</string>
     <string name="svc_idle">Idle</string>
-    <string name="svc_listening">Listening for “Hey JARVIS”…</string>
+    <string name="svc_listening">Listening for "Hey JARVIS"…</string>
     <string name="svc_thinking">Thinking…</string>
     <string name="svc_speaking">Speaking…</string>
     <string name="reply_yes_sir">Yes, Sir?</string>
     <string name="reply_didnt_catch">I didn\'t catch that, Sir.</string>
     <string name="reply_error">Sorry Sir, something went wrong.</string>
     <string name="action_stop">Stop</string>
+    <string name="action_start">Start</string>
+    <string name="action_resume">Resume</string>
+    <string name="action_emergency_stop">Emergency Stop</string>
+    <string name="action_unlock_high_risk">Unlock High Risk</string>
+    <string name="high_risk_locked">High risk operations are locked</string>
+    <string name="high_risk_unlocked">High risk operations are unlocked</string>
     <string name="service_notif_listener">JARVIS Notification Reader</string>
     <string name="onboard_welcome">Hello, Sir. I am JARVIS.</string>
     <string name="onboard_start">Begin</string>
