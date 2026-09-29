@@ -24,14 +24,23 @@ jobs:
           done
       - name: Structured metadata checks
         run: bash tools/verify_release.sh
+      - name: Source contract checks
+        run: python tools/test_source_contracts.py
+      - name: XML parse gate
+        run: |
+          python - <<'PY'
+          import pathlib
+          import xml.etree.ElementTree as ET
+          for p in pathlib.Path("app/src/main").rglob("*.xml"):
+              ET.parse(p)
+          print("XML parse gate passed")
+          PY
       - name: Secret scan
         run: |
-          ! grep -RInE --exclude-dir=.git --exclude='*.md' \
-            '(AKIA[0-9A-Z]{16}|AIza[0-9A-Za-z_-]{35}|-----BEGIN (RSA|EC|OPENSSH) PRIVATE KEY-----|ghp_[A-Za-z0-9]{30,})' .
+          ! grep -RInE --exclude-dir=.git --exclude='*.md'             '(AKIA[0-9A-Z]{16}|AIza[0-9A-Za-z_-]{35}|-----BEGIN (RSA|EC|OPENSSH) PRIVATE KEY-----|ghp_[A-Za-z0-9]{30,})' .
       - name: Sensitive capability scan
         run: |
-          ! grep -RInE --include='AndroidManifest.xml' \
-            'MANAGE_EXTERNAL_STORAGE|QUERY_ALL_PACKAGES|BIND_ACCESSIBILITY_SERVICE|FOREGROUND_SERVICE_DATA_SYNC|ACCESS_BACKGROUND_LOCATION' .
+          ! grep -RInE --include='AndroidManifest.xml'             'MANAGE_EXTERNAL_STORAGE|QUERY_ALL_PACKAGES|BIND_ACCESSIBILITY_SERVICE|FOREGROUND_SERVICE_DATA_SYNC|ACCESS_BACKGROUND_LOCATION' .
 
   wrapper:
     runs-on: ubuntu-latest
@@ -55,8 +64,7 @@ jobs:
       - uses: android-actions/setup-android@v4
       - name: Install Android build prerequisites
         run: |
-          sdkmanager "platforms;android-36" "build-tools;35.0.0" \
-            "ndk;26.1.10909125" "cmake;3.22.1"
+          sdkmanager "platforms;android-36" "build-tools;35.0.0"             "ndk;26.1.10909125" "cmake;3.22.1"
       - name: Fetch and build pinned llama.cpp
         env:
           ANDROID_NDK_HOME: ${{ env.ANDROID_HOME }}/ndk/26.1.10909125
@@ -71,9 +79,26 @@ jobs:
         run: ./gradlew :app:lintDebug
       - name: Assemble debug
         run: ./gradlew :app:assembleDebug
-
+      - name: Assemble release
+        run: ./gradlew :app:assembleRelease
+      - name: Enable KVM for instrumented tests
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Instrumented tests
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          profile: Pixel_6
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          disable-animations: true
+          emulator-boot-timeout: 600
+          script: ./gradlew :app:connectedDebugAndroidTest --no-daemon
       - name: Upload debug APK
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: jarvis-debug-apk
           path: app/build/outputs/apk/debug/app-debug.apk
