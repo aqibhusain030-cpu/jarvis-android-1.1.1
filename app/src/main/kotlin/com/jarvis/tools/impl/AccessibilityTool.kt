@@ -49,7 +49,7 @@ class AccessibilityTool @Inject constructor() : Tool {
                 }
                 ToolResult.Ok(Json.encodeToString(json))
             }
-            "click" -> ToolResult.fromBoolean(
+            "click" -> fromBoolean(
                 service.click(args["text"] as? String, args["resourceId"] as? String),
                 "clicked",
                 "click_failed"
@@ -75,6 +75,6 @@ class AccessibilityTool @Inject constructor() : Tool {
         }
     }
 
-    private fun ToolResult.Companion.fromBoolean(ok: Boolean, success: String, failure: String): ToolResult =
+    private fun fromBoolean(ok: Boolean, success: String, failure: String): ToolResult =
         if (ok) ToolResult.Ok(success) else ToolResult.Err(failure, failure)
 }
