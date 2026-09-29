@@ -2,11 +2,12 @@ package com.jarvis.tools.impl
 
 import com.jarvis.autonomy.GoalEngine
 import com.jarvis.tools.*
+import dagger.Lazy
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class GoalTool @Inject constructor(private val goals: GoalEngine) : Tool {
+class GoalTool @Inject constructor(private val goals: Lazy<GoalEngine>) : Tool {
     override val spec = ToolSpec(
         name = "create_goal",
         descriptionHi = "लंबा लक्ष्य बनाएँ",
@@ -24,7 +25,7 @@ class GoalTool @Inject constructor(private val goals: GoalEngine) : Tool {
         val title = args["title"] as? String ?: return ToolResult.Err("title required", "bad_arg")
         val desc = args["details"] as? String ?: title
         val pr = (args["priority"] as? Number)?.toInt() ?: 3
-        val id = goals.create(title, desc, pr)
+        val id = goals.get().create(title, desc, pr)
         if (id.isBlank()) {
             return ToolResult.Err("max active goals reached", "goal_limit")
         }
