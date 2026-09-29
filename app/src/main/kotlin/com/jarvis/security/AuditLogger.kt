@@ -22,10 +22,9 @@ class AuditLogger @Inject constructor(private val logger: JarvisLogger) {
             val file = File(logger.dir("audit"), "${fmt.format(now)}.log")
             val status = runCatching { kotlinx.serialization.json.Json.parseToJsonElement(result).jsonObject["code"]?.toString() }
                 .getOrNull()
-                ?: if (result.contains(""ok":true")) "ok" else "unknown"
+                ?: if (result.contains("\"ok\":true")) "ok" else "unknown"
             val keys = args.keys.sorted().take(32).joinToString(",")
-            val line = "${timeFmt.format(now)} | $tool | confirmed=$confirmed | arg_keys=$keys | result_code=$status | result_len=${result.length}
-"
+            val line = "${timeFmt.format(now)} | $tool | confirmed=$confirmed | arg_keys=$keys | result_code=$status | result_len=${result.length}"
             runCatching { file.appendText(line) }
                 .onFailure { logger.e(TAG, "audit write failed", it) }
             cleanup(fmt.format(now))
