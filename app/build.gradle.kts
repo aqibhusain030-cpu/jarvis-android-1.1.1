@@ -24,10 +24,6 @@ android {
                 arguments += listOf("-DANDROID_STL=c++_shared", "-DCMAKE_BUILD_TYPE=Release")
             }
         }
-        python {
-            buildPython("python3.10")
-            pip { install("numpy==1.26.4"); install("regex==2024.7.24") }
-        }
     }
     externalNativeBuild {
         cmake { path = file("src/main/cpp/CMakeLists.txt"); version = "3.22.1" }
@@ -55,6 +51,18 @@ android {
     }
     lint { abortOnError = true; checkReleaseBuilds = true }
 }
+    
+chaquopy {
+    defaultConfig {
+        version = "3.10"
+        buildPython("python3.10")
+        pip {
+            install("numpy==1.26.4")
+            install("regex==2024.7.24")
+        }
+    }
+}
+
 
 dependencies {
     implementation("androidx.core:core-ktx:1.13.1")

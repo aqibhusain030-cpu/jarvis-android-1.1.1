@@ -48,6 +48,10 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
+      - name: Set up Python 3.10 for Chaquopy
+        uses: actions/setup-python@v7
+        with:
+          python-version: '3.10'
       - uses: android-actions/setup-android@v4
       - name: Install Android build prerequisites
         run: |
