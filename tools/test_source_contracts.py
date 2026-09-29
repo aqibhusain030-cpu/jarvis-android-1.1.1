@@ -44,8 +44,12 @@ assert 'elementToAny' in bridge
 assert 'toJsonElement' in bridge
 assert 'result.data.toJsonElement()' in bridge
 
-assert 'version = 2' in memory
+assert 'version = 3' in memory
 assert 'MIGRATION_1_2' in memory
+assert 'MIGRATION_2_3' in memory
+assert 'LearningLessonEntity::class' in memory
+assert 'recordMistake' in memory
+assert 'recordLessonSuccess' in memory
 assert 'resumableGoals()' in memory
 assert 'allGoals()' in memory
 assert 'maxRetries' in entity and 'maxRuntimeSeconds' in entity
@@ -58,6 +62,9 @@ assert '64 * 1024L' in read("app/src/main/kotlin/com/jarvis/tools/impl/HttpTool.
 assert 'fun cosine(a: FloatArray, b: FloatArray)' in read("app/src/main/kotlin/com/jarvis/memory/MemorySearch.kt")
 assert 'fun lexical(query: String, value: String)' in read("app/src/main/kotlin/com/jarvis/memory/MemorySearch.kt")
 assert 'No unverified embedding or vision checkpoint added' in read("docs/APPLE_SYSTEMS_ADOPTION_AUDIT.md")
+assert 'lastFailureByTool' in dispatcher
+assert 'recordLessonSuccess' in dispatcher
+assert 'learning_lessons' in dao
 assert 'currentCoroutineContext().isActive' in wake
 assert 'audio.isRunning()' in wake
 assert 'Local STT unavailable; transcript dropped' in read("app/src/main/kotlin/com/jarvis/voice/SpeechRecognizerBridge.kt")
