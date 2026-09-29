@@ -15,11 +15,6 @@ import java.util.concurrent.atomic.AtomicInteger
 import javax.inject.Inject
 import javax.inject.Singleton
 
-/**
- * Plan → execute → reflect loop for long-running goals.
- * Enforces maxActiveGoals, maxRetries per step, maxRuntimeSeconds, maxToolCallsPerGoal.
- * Failed steps that still have retries are reset to PENDING; exhausted steps block the goal.
- */
 @Singleton
 class GoalEngine @Inject constructor(
     private val dispatcher: ToolDispatcher,
@@ -43,8 +38,12 @@ class GoalEngine @Inject constructor(
             val id = UUID.randomUUID().toString()
             val plan = planner.plan(title, description)
             val goal = Goal(
-                id = id, title = title, description = description,
-                priority = priority.coerceIn(1, 5), plan = plan, status = GoalStatus.PENDING
+                id = id,
+                title = title,
+                description = description,
+                priority = priority.coerceIn(1, 5),
+                plan = plan,
+                status = GoalStatus.PENDING
             )
             memory.putGoal(goal)
             activeCount.incrementAndGet()
@@ -59,17 +58,17 @@ class GoalEngine @Inject constructor(
     suspend fun resumePersisted() {
         createMutex.withLock {
             val max = config.current.value.maxActiveGoals.coerceAtLeast(1)
-            val running = memory.runningGoals().sortedByDescending { it.priority }
-            for (g in running.take(max)) {
-                logger.i(TAG, "Resuming goal ${g.id}")
+            val resumable = memory.resumableGoals().sortedByDescending { it.priority }
+            for (g in resumable.take(max)) {
+                logger.i(TAG, "Resuming goal \${g.id} status=\${g.status}")
                 activeCount.incrementAndGet()
                 scope.launch {
                     try { run(g) }
                     finally { activeCount.updateAndGet { (it - 1).coerceAtLeast(0) } }
                 }
             }
-            if (running.size > max) {
-                logger.w(TAG, "${running.size - max} persisted goals deferred by maxActiveGoals=$max")
+            if (resumable.size > max) {
+                logger.w(TAG, "\${resumable.size - max} persisted goals deferred by maxActiveGoals=\$max")
             }
         }
     }
@@ -102,7 +101,6 @@ class GoalEngine @Inject constructor(
                     memory.putGoal(goal)
                     return
                 }
-                // Reset for retry so the loop finds it as PENDING again.
                 step.status = StepStatus.PENDING
                 memory.putGoal(goal)
             } else {
@@ -110,12 +108,11 @@ class GoalEngine @Inject constructor(
             }
         }
 
-        // Only DONE when every step succeeded.
         val allDone = goal.plan.all { it.status == StepStatus.DONE }
         goal.status = if (allDone) GoalStatus.DONE else GoalStatus.FAILED
         goal.updatedAt = System.currentTimeMillis()
         memory.putGoal(goal)
-        logger.i(TAG, "Goal finished: ${goal.id} status=${goal.status}")
+        logger.i(TAG, "Goal finished: \${goal.id} status=\${goal.status}")
     }
 
     private suspend fun executeStep(goal: Goal, step: PlanStep): Boolean {
@@ -161,10 +158,12 @@ class GoalEngine @Inject constructor(
             createMutex.withLock {
                 val max = config.current.value.maxActiveGoals.coerceAtLeast(1)
                 if (activeCount.get() >= max) {
-                    logger.w(TAG, "maxActiveGoals=$max reached; refusing resume id=$id")
+                    logger.w(TAG, "maxActiveGoals=\$max reached; refusing resume id=\$id")
                     return@withLock
                 }
-                val g = memory.getGoal(id)?.takeIf { it.status != GoalStatus.DONE && it.status != GoalStatus.CANCELLED } ?: return@withLock
+                val g = memory.getGoal(id)
+                    ?.takeIf { it.status != GoalStatus.DONE && it.status != GoalStatus.CANCELLED }
+                    ?: return@withLock
                 activeCount.incrementAndGet()
                 g.status = GoalStatus.RUNNING
                 memory.putGoal(g)
