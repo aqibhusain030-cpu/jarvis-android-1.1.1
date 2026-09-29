@@ -1,16 +1,20 @@
 package com.jarvis
 
+import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import androidx.test.platform.app.InstrumentationRegistry
-import org.junit.Assert.assertTrue
+import org.junit.Assert.assertEquals
 import org.junit.Test
 import org.junit.runner.RunWith
 
-/** Manual smoke test: verifies the app context initializes without crashing. */
+/** Real device/emulator smoke test for the activity startup path. */
 @RunWith(AndroidJUnit4::class)
 class WakeWordInstrumentedTest {
-    @Test fun contextBootsCleanly() {
-        val ctx = InstrumentationRegistry.getInstrumentation().targetContext
-        assertTrue(ctx.packageName == "com.jarvis")
+    @Test
+    fun mainActivityLaunchesCleanly() {
+        ActivityScenario.launch(MainActivity::class.java).use { scenario ->
+            scenario.onActivity { activity ->
+                assertEquals(MainActivity::class.java, activity::class.java)
+            }
+        }
     }
 }
