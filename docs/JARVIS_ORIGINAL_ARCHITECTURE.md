@@ -83,3 +83,21 @@ A future JARVIS OS/device repository may contain:
 - Repo multi-repository manifest
 
 Those components must remain outside the application repository until such a platform exists.
+
+## 7. Sound-trigger alignment
+
+JARVIS follows the Android sound-trigger architecture at the application boundary without pretending to be an STHAL implementation. The current wake-word engine remains an app-owned ONNX/openWakeWord pipeline using AudioRecord because a normal APK cannot replace the privileged vendor Sound Trigger HAL.
+
+The detector now exposes an explicit lifecycle:
+
+- UNLOADED -> READY -> LISTENING -> TRIGGERED
+- LISTENING -> PAUSED on cancellation/stop
+- LISTENING -> ERROR on inference/runtime failure
+
+A successful recognition produces a bounded `WakeTriggerEvent` containing the model identifier, confidence score, and elapsed-realtime timestamp. This gives the voice loop a clean event boundary matching the conceptual Sound Trigger stack: capture -> recognition -> trigger -> handoff to speech processing.
+
+If JARVIS later becomes a privileged/system component on a custom AOSP device, the same detector contract can be backed by the platform Sound Trigger service/ISoundTriggerHw implementation while retaining the application-level wake event contract. The APK must not implement or ship an STHAL.
+
+### Power and privacy boundary
+
+The wake recognizer runs only inside the explicitly user-started microphone foreground service. It does not self-start at boot, does not expose raw microphone data to external agents, and pauses/relinquishes recognition when the voice loop stops.
