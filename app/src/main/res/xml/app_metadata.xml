@@ -1,4 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<AppFunctionAppMetadata xmlns:appfn="http://schemas.android.com/apk/res/androidx.appfunctions"
-    appfn:description="JARVIS provides safe, read-only system-agent functions for runtime status and user goals. Mutating, destructive, communication, permission-sensitive, and high-risk actions remain inside JARVIS security controls and are not exposed through these functions."
-    appfn:displayDescription="@string/app_functions_description" />
