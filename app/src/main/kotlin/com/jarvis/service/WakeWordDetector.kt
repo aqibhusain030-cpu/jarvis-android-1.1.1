@@ -8,6 +8,9 @@ import com.jarvis.logging.JarvisLogger
 import com.jarvis.models.WakeWordAssetProvisioner
 import java.nio.FloatBuffer
 import java.util.ArrayDeque
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -73,8 +76,12 @@ class WakeWordDetector @Inject constructor(
     suspend fun awaitWake() {
         load()
         audio.start()
-        while (true) {
-            val frame = audio.readFrame() ?: continue
+        while (currentCoroutineContext().isActive) {
+            val frame = audio.readFrame()
+            if (frame == null) {
+                delay(if (audio.isRunning()) 1L else 5L)
+                continue
+            }
             if (!armed) continue
             if (score(frame) >= config.current.value.wakeThreshold) {
                 armed = false
