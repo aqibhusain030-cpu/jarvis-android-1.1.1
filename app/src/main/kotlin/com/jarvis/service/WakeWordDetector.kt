@@ -6,6 +6,7 @@ import ai.onnxruntime.OrtSession
 import com.jarvis.config.ConfigRepository
 import com.jarvis.logging.JarvisLogger
 import com.jarvis.models.WakeWordAssetProvisioner
+import android.os.SystemClock
 import java.nio.FloatBuffer
 import java.util.ArrayDeque
 import kotlinx.coroutines.currentCoroutineContext
@@ -22,6 +23,14 @@ import javax.inject.Singleton
  * upstream recommendation for efficient, low-latency streaming inference.
  */
 @Singleton
+enum class WakeRecognitionState { UNLOADED, READY, LISTENING, TRIGGERED, PAUSED, ERROR }
+
+data class WakeTriggerEvent(
+    val modelId: String,
+    val score: Float,
+    val elapsedRealtimeMs: Long,
+)
+
 class WakeWordDetector @Inject constructor(
     private val audio: AudioCapture,
     private val config: ConfigRepository,
@@ -42,6 +51,12 @@ class WakeWordDetector @Inject constructor(
     private val embeddings = ArrayDeque<FloatArray>()
 
     @Volatile private var armed = true
+    @Volatile private var state: WakeRecognitionState = WakeRecognitionState.UNLOADED
+    @Volatile private var lastTrigger: WakeTriggerEvent? = null
+
+    fun state(): WakeRecognitionState = state
+
+    fun lastTrigger(): WakeTriggerEvent? = lastTrigger
 
     @Synchronized
     fun load() {
@@ -65,30 +80,66 @@ class WakeWordDetector @Inject constructor(
         env = e
 
         resetBuffers()
+        state = WakeRecognitionState.READY
         logger.i(TAG, "Wake-word pipeline loaded: ${assets.classifier.name}")
     }
 
     fun reset() {
         armed = true
         resetBuffers()
+        state = if (classifierSession != null) WakeRecognitionState.READY else WakeRecognitionState.UNLOADED
     }
 
-    suspend fun awaitWake() {
+    /** Starts the app-owned wake recognizer and emits one discrete trigger event. */
+    suspend fun awaitWake(): WakeTriggerEvent {
         load()
-        audio.start()
-        while (currentCoroutineContext().isActive) {
-            val frame = audio.readFrame()
-            if (frame == null) {
-                delay(if (audio.isRunning()) 1L else 5L)
-                continue
+        state = WakeRecognitionState.LISTENING
+        try {
+            audio.start()
+            while (currentCoroutineContext().isActive) {
+                val frame = audio.readFrame()
+                if (frame == null) {
+                    delay(if (audio.isRunning()) 1L else 5L)
+                    continue
+                }
+                if (!armed) continue
+                val confidence = score(frame)
+                if (confidence >= config.current.value.wakeThreshold) {
+                    armed = false
+                    val event = WakeTriggerEvent(
+                        modelId = "hey_jarvis_v0.1.onnx",
+                        score = confidence,
+                        elapsedRealtimeMs = SystemClock.elapsedRealtime(),
+                    )
+                    lastTrigger = event
+                    state = WakeRecognitionState.TRIGGERED
+                    logger.i(TAG, "Wake word detected score=${"%.3f".format(confidence)}")
+                    return event
+                }
             }
-            if (!armed) continue
-            if (score(frame) >= config.current.value.wakeThreshold) {
-                armed = false
-                logger.i(TAG, "Wake word detected")
-                return
-            }
+            state = WakeRecognitionState.PAUSED
+            throw kotlinx.coroutines.CancellationException("Wake recognizer stopped")
+        } catch (ce: kotlinx.coroutines.CancellationException) {
+            if (state == WakeRecognitionState.LISTENING) state = WakeRecognitionState.PAUSED
+            throw ce
+        } catch (t: Throwable) {
+            state = WakeRecognitionState.ERROR
+            throw t
         }
+    }
+
+    /** Temporarily prevents detector evaluation without releasing its loaded model. */
+    fun pauseRecognition() {
+        armed = false
+        if (state == WakeRecognitionState.LISTENING || state == WakeRecognitionState.READY) {
+            state = WakeRecognitionState.PAUSED
+        }
+    }
+
+    /** Resumes detector evaluation after a pause. */
+    fun resumeRecognition() {
+        armed = true
+        if (classifierSession != null) state = WakeRecognitionState.READY
     }
 
     /**
@@ -237,6 +288,8 @@ class WakeWordDetector @Inject constructor(
         melSession = null
         env = null
         resetBuffers()
+        armed = true
+        state = WakeRecognitionState.UNLOADED
     }
 
     companion object {
