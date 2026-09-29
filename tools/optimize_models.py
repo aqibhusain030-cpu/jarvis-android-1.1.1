@@ -29,6 +29,14 @@ PROFILES = {
         "input": {"layout": "NCHW", "dtype": "float32", "size": [224, 224], "channels": 3},
         "capabilities": ["vision"],
     },
+    "depth-anything-v2-mobile": {
+        "backend": "onnxruntime",
+        "precision": "fp16",
+        "compression": "fp16-cast",
+        "input": {"layout": "NCHW", "dtype": "float32", "size": [518, 518], "channels": 3},
+        "output": {"semantic": "relative-depth", "dtype": "float32"},
+        "capabilities": ["vision", "depth-estimation", "spatial-awareness"],
+    },
     "llm-mobile": {
         "backend": "llama.cpp",
         "precision": "mixed-q4",
