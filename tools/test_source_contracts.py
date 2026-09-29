@@ -73,16 +73,28 @@ assert "WakeRecognitionState.TRIGGERED" in wake_detector
 assert "WakeRecognitionState.ERROR" in wake_detector
 assert "SystemClock.elapsedRealtime()" in wake_detector
 
-appfn_manifest = read("app/src/main/AndroidManifest.xml")
-appfn_metadata = read("app/src/main/res/xml/app_metadata.xml")
-assert "@AppFunctionServiceEntryPoint" in appfn
-assert '@AppFunction(isDescribedByKDoc = true)' in appfn
-assert "getJarvisStatus" in appfn and "listGoals" in appfn and "getGoal" in appfn
-assert "@AppFunctionSerializable(isDescribedByKDoc = true)" in appfn
-assert 'android.permission.BIND_APP_FUNCTION_SERVICE' in appfn_manifest
-assert 'android.app.appfunctions.v2' in appfn_manifest
-assert 'android.app.appfunctions.app_metadata' in appfn_manifest
-assert "<AppFunctionAppMetadata" in appfn_metadata
+assert 'lockPlan' in dispatcher
+assert 'confirmPlan' in dispatcher
+assert 'invokeLockedPlanAction' in dispatcher
+command_engine = read("app/src/main/kotlin/com/jarvis/command/UniversalCommandEngine.kt")
+action_plan = read("app/src/main/kotlin/com/jarvis/command/ActionPlan.kt")
+cap_registry = read("app/src/main/kotlin/com/jarvis/capability/CapabilityRegistry.kt")
+cap_backends = read("app/src/main/kotlin/com/jarvis/capability/DefaultCapabilityBackends.kt")
+python_brain = read("app/src/main/python/brain.py")
+brain_bridge = read("app/src/main/kotlin/com/jarvis/brain/BrainBridge.kt")
+service = read("app/src/main/kotlin/com/jarvis/service/JarvisForegroundService.kt")
+assert 'UniversalCommandEngine' in command_engine
+assert 'ToolArgsCodec.canonical' in action_plan
+assert 'planCommand' in brain_bridge
+assert 'FutureAppFunctionsBackend' in cap_backends
+assert 'requiresPlatformIntegration' in cap_registry
+assert 'JarvisAccessibilityService' in read("app/src/main/kotlin/com/jarvis/accessibility/JarvisAccessibilityService.kt")
+assert 'accessibility_action' in read("app/src/main/kotlin/com/jarvis/tools/impl/AccessibilityTool.kt")
+assert 'BIND_ACCESSIBILITY_SERVICE' in read("app/src/main/AndroidManifest.xml")
+assert 'UniversalCommandEngine' in service
+assert 'never executes' in python_brain.lower()
+assert '_run_tool' not in python_brain
+assert '_tool_bridge' not in python_brain
 
 assert 'currentCoroutineContext().isActive' in wake
 assert 'audio.isRunning()' in wake
