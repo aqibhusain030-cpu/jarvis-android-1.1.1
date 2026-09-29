@@ -65,7 +65,7 @@ class MemoryStore @Inject constructor(
         }
 
     suspend fun recentContext(limit: Int = 12): List<String> = withContext(Dispatchers.IO) {
-        db.dao().recentMessages(limit).reversed().map { "\${it.role}: \${it.content}" }
+        db.dao().recentMessages(limit).reversed().map { "${it.role}: ${it.content}" }
     }
 
     suspend fun putGoal(goal: Goal) = withContext(Dispatchers.IO) {
