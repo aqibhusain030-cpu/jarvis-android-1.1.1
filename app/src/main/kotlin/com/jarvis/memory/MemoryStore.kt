@@ -22,8 +22,8 @@ import javax.inject.Singleton
 
 @Database(
     entities = [MemoryEntity::class, MessageEntity::class, KvEntity::class,
-        GoalEntity::class, TaskEventEntity::class],
-    version = 2, exportSchema = false
+        GoalEntity::class, TaskEventEntity::class, LearningLessonEntity::class],
+    version = 3, exportSchema = false
 )
 abstract class JarvisDb : RoomDatabase() { abstract fun dao(): MemoryDao }
 
