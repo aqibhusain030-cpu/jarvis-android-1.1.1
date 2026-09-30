@@ -69,7 +69,11 @@ class RemoteLlmEngine @Inject constructor(
             .build()
 
         runCatching {
-            client.newCall(request).execute().use { response ->
+            client.newBuilder()
+                .readTimeout(c.remoteInferenceTimeoutMs.toLong(), TimeUnit.MILLISECONDS)
+                .callTimeout((c.remoteInferenceTimeoutMs + 5_000L).coerceAtMost(305_000L), TimeUnit.MILLISECONDS)
+                .build()
+                .newCall(request).execute().use { response ->
                 if (!response.isSuccessful) {
                     logger.w(TAG, "Remote inference HTTP " + response.code)
                     return@use ""
