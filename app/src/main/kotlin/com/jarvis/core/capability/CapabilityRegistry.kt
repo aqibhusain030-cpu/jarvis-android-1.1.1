@@ -1,44 +1,21 @@
 package com.jarvis.core.capability
 
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
+import java.util.concurrent.ConcurrentHashMap
 
 class CapabilityRegistry {
-    private data class Entry(val priority: Int, val backend: CapabilityBackend)
+    private data class Binding(val backend: CapabilityBackend, val priority: Int)
+    private val bindings = ConcurrentHashMap<String, Binding>()
 
-    private val mutex = Mutex()
-    private val entries = mutableListOf<Entry>()
-
-    suspend fun register(backend: CapabilityBackend, priority: Int = 0) {
-        require(backend.backendId.isNotBlank()) { "Backend id must not be blank." }
-        mutex.withLock {
-            entries.removeAll { it.backend.backendId == backend.backendId }
-            entries += Entry(priority, backend)
-            entries.sortWith(
-                compareByDescending<Entry> { it.priority }.thenBy { it.backend.backendId }
-            )
+    fun register(backend: CapabilityBackend, priority: Int = 0) {
+        backend.capabilities.forEach { capability ->
+            bindings.compute(capability.id) { _, current ->
+                if (current == null || priority > current.priority) Binding(backend, priority) else current
+            }
         }
     }
 
-    suspend fun unregister(backendId: String): Boolean = mutex.withLock {
-        val before = entries.size
-        entries.removeAll { it.backend.backendId == backendId }
-        entries.size != before
-    }
-
-    suspend fun find(capabilityId: String): CapabilityBackend? = mutex.withLock {
-        entries.firstOrNull { it.backend.supports(capabilityId) }?.backend
-    }
-
-    suspend fun describe(capabilityId: String): Capability? = mutex.withLock {
-        entries.asSequence()
-            .flatMap { it.backend.capabilities.asSequence() }
-            .firstOrNull { it.id == capabilityId }
-    }
-
-    suspend fun allCapabilities(): List<Capability> = mutex.withLock {
-        entries.flatMap { it.backend.capabilities }
-            .distinctBy { it.id }
-            .sortedBy { it.id }
-    }
+    fun resolve(capabilityId: String): CapabilityBackend? = bindings[capabilityId]?.backend
+    fun capability(capabilityId: String): Capability? = bindings[capabilityId]?.backend?.capabilities?.firstOrNull { it.id == capabilityId }
+    fun all(): List<Capability> = bindings.values.flatMap { it.backend.capabilities }.distinctBy { it.id }.sortedBy { it.id }
+    fun backendIds(): List<String> = bindings.values.map { it.backend.backendId }.distinct().sorted()
 }
