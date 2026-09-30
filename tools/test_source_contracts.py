@@ -36,8 +36,10 @@ assert 'Java_com_jarvis_brain_WhisperJNI_nativeTranscribe' in cpp_whisper
 assert 'const float' not in cpp_whisper
 assert 'std::vector<float> pcm' in cpp_whisper
 assert 'nativeTranscribe(handle: Long, pcm: ByteArray, language: String)' in whisper
-assert llm.count('val entry = models.all().firstOrNull') == 1
-assert llm.count('ModelChecksum.verify(path, entry.sha256)') == 1
+assert 'models.assetForFilename("llm", modelName)' in llm
+assert 'models.verify(asset)' in llm
+assert 'class HybridLlmEngine' in read("app/src/main/kotlin/com/jarvis/brain/HybridLlmEngine.kt")
+assert 'class RemoteLlmEngine' in read("app/src/main/kotlin/com/jarvis/brain/RemoteLlmEngine.kt")
 assert 'authorizationMutex' in dispatcher
 assert 'validateArgs' in dispatcher
 assert 'elementToAny' in bridge
@@ -107,3 +109,11 @@ assert 'asset.downloadUrl.contains("/resolve/" + asset.revision + "/" + asset.fi
 assert 'read == asset.sizeBytes' in model_downloader
 assert 'models.verify(asset)' in local_llm
 assert 'models.verify(asset)' in stt_bridge
+
+assert 'remoteInferenceEnabled' in read("app/src/main/kotlin/com/jarvis/config/JarvisConfig.kt")
+assert 'remote_enabled' in read("app/src/main/assets/config.json")
+assert 'Json.encodeToJsonElement(tool.spec.parameters)' in read("app/src/main/kotlin/com/jarvis/brain/BrainBootstrap.kt")
+assert 'LESSONS FROM PREVIOUS EXECUTION' in read("app/src/main/python/brain.py")
+assert '_MAX_TOOL_ROUNDS = 8' in read("app/src/main/python/brain.py")
+assert 'target_total_parameters' in read("model/2t/config.json")
+assert 'exact parameter count' in read("model/2t/training/README.md")
