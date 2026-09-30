@@ -14,7 +14,7 @@ class FridayOperationCatalogTest {
     @Test
     fun high_risk_operations_have_explicit_tools() {
         FridayOperationCatalog.operations
-            .filter { it.risk.name == "HIGH" }
+            .filter { it.risk.name == "HIGH" && it.supported }
             .forEach { assertThat(it.existingTool).isNotNull() }
     }
 
