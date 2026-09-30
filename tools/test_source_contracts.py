@@ -126,3 +126,8 @@ assert 'Authorization' in remote_engine
 assert 'AndroidKeyStore' in credentials
 assert 'AES/GCM/NoPadding' in credentials
 assert 'Bearer ' in remote_engine
+
+assert 'setRemoteInference' in read("app/src/main/kotlin/com/jarvis/config/ConfigRepository.kt")
+assert 'RemoteInferenceCredentialStore' in read("app/src/main/kotlin/com/jarvis/MainActivity.kt")
+assert 'Save' in read("app/src/main/kotlin/com/jarvis/ui/SettingsScreen.kt")
+assert 'clear()' in read("app/src/main/kotlin/com/jarvis/brain/RemoteInferenceCredentialStore.kt")
