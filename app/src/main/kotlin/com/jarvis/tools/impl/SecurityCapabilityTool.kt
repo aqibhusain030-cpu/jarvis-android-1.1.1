@@ -31,6 +31,8 @@ class SecurityCapabilityTool @Inject constructor(
         "security.evidence.record",
         "network.dns_resolve",
         "network.tcp_probe",
+        "network.udp_probe",
+        "network.websocket_probe",
         "network.port_scan",
         "network.service_detect",
         "network.tls_inspect",
