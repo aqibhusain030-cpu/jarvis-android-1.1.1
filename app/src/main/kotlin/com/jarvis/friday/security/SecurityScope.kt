@@ -165,7 +165,7 @@ object TargetMatcher {
         val raw = value.trim().removeSuffix("/")
         if (raw.isBlank()) return null
         if (raw.startsWith("*.")) return raw.lowercase()
-        if (raw.matches(Regex("""^\\d{1,3}(\\.\\d{1,3}){3}/\\d{1,2}$"""))) return raw.lowercase()
+        if (raw.matches(Regex("""^\d{1,3}(\.\d{1,3}){3}/\d{1,2}$"""))) return raw.lowercase()
         return runCatching {
             val uri = if (raw.contains("://")) java.net.URI(raw) else null
             val host = uri?.host ?: raw.substringBefore('/').substringBefore(':')
