@@ -4,6 +4,7 @@ import com.jarvis.core.capability.*
 import com.jarvis.friday.security.SecurityRisk
 import com.jarvis.friday.security.SecurityScopeRegistry
 import com.jarvis.network.*
+import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -12,13 +13,16 @@ class NetworkSecurityBackend @Inject constructor(
     private val scopes: SecurityScopeRegistry,
     private val engine: NetworkEngine,
     private val tls: TlsInspector,
-    private val inventory: NetworkInventory
+    private val inventory: NetworkInventory,
+    private val tcp: TcpProbe,
+    private val fingerprint: ServiceFingerprinter,
+    private val operator: OperatorAuthorization
 ) : CapabilityBackend {
     override val backendId = "friday.network"
     override val capabilities = setOf(
         Capability("network.dns_resolve", "Resolve DNS within an authorized security scope"),
         Capability("network.tcp_probe", "Check TCP connectivity within an authorized security scope", Capability.RiskLevel.MEDIUM),
-        Capability("network.port_scan", "Enumerate bounded TCP ports within an authorized security scope", Capability.RiskLevel.HIGH),
+        Capability("network.port_scan", "Enumerate bounded TCP ports within an authorized security scope", Capability.RiskLevel.HIGH, timeoutMs = 45_000L),
         Capability("network.service_detect", "Identify services from authorized port observations", Capability.RiskLevel.MEDIUM),
         Capability("network.tls_inspect", "Inspect TLS metadata within an authorized security scope", Capability.RiskLevel.MEDIUM),
         Capability("network.inventory", "Read the authorized network asset inventory"),
@@ -38,7 +42,8 @@ class NetworkSecurityBackend @Inject constructor(
             "network.tcp_probe" -> {
                 val port = r.arguments["port"]?.toIntOrNull()?.takeIf { it in 1..65535 } ?: return invalid(r)
                 checkScope(scopeId, target, "tcp_probe", SecurityRisk.R2_ENUMERATION)?.let { return it }
-                val open = TcpProbe().probe(target, port)
+                if (!operator.consume()) return CapabilityResult.Rejected(r.requestId, CapabilityResult.RejectionCode.POLICY_DENIED, "Fresh operator authorization is required for active network probing.")
+                val open = tcp.probe(target, port)
                 CapabilityResult.Success(r.requestId, "TCP probe completed.", mapOf("host" to target, "port" to port.toString(), "open" to open.toString()))
             }
             "network.port_scan" -> {
@@ -55,7 +60,7 @@ class NetworkSecurityBackend @Inject constructor(
             "network.service_detect" -> {
                 val port = r.arguments["port"]?.toIntOrNull()?.takeIf { it in 1..65535 } ?: return invalid(r)
                 checkScope(scopeId, target, "service_detect", SecurityRisk.R2_ENUMERATION)?.let { return it }
-                val service = ServiceFingerprinter().identify(port)
+                val service = fingerprint.identify(port)
                 CapabilityResult.Success(r.requestId, "Service identification completed.", mapOf("port" to port.toString(), "service" to service))
             }
             "network.tls_inspect" -> {
@@ -92,7 +97,7 @@ class NetworkSecurityBackend @Inject constructor(
 
     private fun checkScope(scopeId: String, target: String, capability: String, risk: SecurityRisk): CapabilityResult.Rejected? =
         if (scopes.isAuthorized(scopeId, target, capability, risk)) null else denied(
-            CapabilityRequest("", scopeId, emptyMap(), CapabilityRequest.Source.USER, false)
+            CapabilityRequest(capabilityId = capability, arguments = mapOf("scope_id" to scopeId, "target" to target), requestId = UUID.randomUUID().toString(), source = CapabilityRequest.Source.USER)
         )
 
     private fun invalid(r: CapabilityRequest) = CapabilityResult.Rejected(r.requestId, CapabilityResult.RejectionCode.INVALID_ARGUMENTS, "Required network arguments are missing or invalid.")
