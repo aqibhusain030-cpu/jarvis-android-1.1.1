@@ -18,7 +18,7 @@ class FridayCapabilityGateway(
                 arguments = command.arguments,
                 requestId = command.id,
                 source = CapabilityRequest.Source.ASSISTANT,
-                confirmationGranted = command.confirmationRequired.not()
+                confirmationGranted = command.confirmationGranted
             )
         )
 
