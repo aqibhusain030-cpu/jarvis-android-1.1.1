@@ -6,6 +6,12 @@ import com.jarvis.capability.accessibility.JarvisAccessibilityService
 import com.jarvis.capability.android.AndroidIntentBackend
 import com.jarvis.capability.android.PackageBackend
 import com.jarvis.capability.security.SecurityLabBackend
+import com.jarvis.capability.network.NetworkSecurityBackend
+import com.jarvis.network.DnsResolver
+import com.jarvis.network.PortScanner
+import com.jarvis.network.TcpProbe
+import com.jarvis.network.ServiceFingerprinter
+import com.jarvis.network.TlsInspector
 import com.jarvis.friday.security.ConsentMonitor
 import com.jarvis.friday.security.ExploitSimulator
 import com.jarvis.friday.security.InMemoryConsentMonitor
@@ -66,12 +72,14 @@ object JarvisModule {
         simulator: ExploitSimulator,
         monitor: ConsentMonitor,
         operator: OperatorAuthorization,
+        networkBackend: NetworkSecurityBackend,
         toolRegistry: ToolRegistry,
         toolDispatcher: com.jarvis.tools.ToolDispatcher
     ): List<com.jarvis.core.capability.CapabilityBackend> = listOf(
         AndroidIntentBackend(context),
         PackageBackend(context),
         SecurityLabBackend(scopes, assessment, simulator, monitor, operator),
+        networkBackend,
         AccessibilityBackend(JarvisAccessibilityService.controller()),
         com.jarvis.core.capability.ToolCapabilityBackend(toolRegistry, toolDispatcher)
     )
@@ -88,6 +96,22 @@ object JarvisModule {
             registry = registry,
             policyProvider = DefaultCapabilityPolicy()
         )
+    }
+
+
+    @Provides @Singleton
+    fun networkSecurityBackend(
+        scopes: SecurityScopeRegistry,
+        events: com.jarvis.network.NetworkEventBus,
+        inventory: com.jarvis.network.NetworkInventory,
+        operator: OperatorAuthorization
+    ): NetworkSecurityBackend {
+        val dns = DnsResolver()
+        val tcp = TcpProbe()
+        val scanner = PortScanner(tcp, scopes)
+        val fingerprint = ServiceFingerprinter()
+        val engine = com.jarvis.network.NetworkEngine(dns, scanner, fingerprint, scopes, inventory, events)
+        return NetworkSecurityBackend(scopes, engine, TlsInspector(), inventory, tcp, fingerprint, operator)
     }
 
     @Provides @Singleton
