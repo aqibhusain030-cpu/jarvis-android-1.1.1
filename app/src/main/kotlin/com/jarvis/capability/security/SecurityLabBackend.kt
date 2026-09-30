@@ -46,6 +46,7 @@ class SecurityLabBackend(
         )
         "security.monitor.events" -> events(r)
         else -> CapabilityResult.Rejected(r.requestId, CapabilityResult.RejectionCode.UNKNOWN_CAPABILITY, "Unknown security capability.")
+        }
     }
 
     private fun enroll(r: CapabilityRequest): CapabilityResult {
