@@ -63,7 +63,7 @@ class SecurityAssessmentEngine {
             )
         }
 
-        val penalty: Int = findings.sumOf {
+        val penalty: Int = findings.map {
             when (it.severity) {
                 SecurityFinding.Severity.INFO -> 0
                 SecurityFinding.Severity.LOW -> 5
@@ -71,7 +71,7 @@ class SecurityAssessmentEngine {
                 SecurityFinding.Severity.HIGH -> 22
                 SecurityFinding.Severity.CRITICAL -> 40
             }
-        }
+        }.sum()
 
         return SecurityAssessment(
             target = target,
