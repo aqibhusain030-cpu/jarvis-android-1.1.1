@@ -32,7 +32,7 @@ object FridayOperationCatalog {
         op("communicate.call", Domain.COMMUNICATION, "Place a call", "make_call", FridayRisk.HIGH),
         op("communicate.whatsapp", Domain.COMMUNICATION, "Send WhatsApp message", "send_whatsapp", FridayRisk.HIGH),
         op("communicate.email", Domain.COMMUNICATION, "Send email", "send_email", FridayRisk.HIGH),
-        op("device.launch_app", Domain.DEVICE, "Launch an installed application", "app_launch"),
+        op("device.launch_app", Domain.DEVICE, "Launch an installed application", "open_app"),
         op("device.screenshot", Domain.SENSING, "Capture a screenshot", "screenshot"),
         op("device.volume", Domain.DEVICE, "Control device volume", "volume"),
         op("device.media", Domain.MEDIA, "Control media playback", "media"),
