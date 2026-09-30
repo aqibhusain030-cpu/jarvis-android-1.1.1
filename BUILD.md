@@ -47,3 +47,12 @@ The manifest contains the authoritative revisions and digests. Do not replace `r
 7. Verify the model on a real target device before release.
 
 Never commit model weights to the source repository merely to avoid the verification process.
+
+
+## Immutable model supply chain
+
+Model weights are never trusted by filename alone. The production runtime uses `app/src/main/assets/models/manifest.v1.json`. Every asset requires an exact provider/model ID, immutable 40-hex revision, format, filename, byte size, SHA-256, license, source URL, pinned download URL, backend, precision/quantization, verification metadata, and minimum hardware.
+
+Runtime sequence: `manifest parse → schema validation → hardware check → download → byte-count check → SHA-256 → atomic install → final SHA-256 → native load`.
+
+Large model weights are intentionally excluded from Git. Never replace a pinned `/resolve/<revision>/...` URL with `/resolve/main/...`, and never change a digest without independently verifying the upstream artifact.
