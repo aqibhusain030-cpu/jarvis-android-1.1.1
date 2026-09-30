@@ -12,6 +12,7 @@ import com.jarvis.network.PortScanner
 import com.jarvis.network.TcpProbe
 import com.jarvis.network.ServiceFingerprinter
 import com.jarvis.network.TlsInspector
+import com.jarvis.security.web.WebSecurityAnalyzer
 import com.jarvis.friday.security.ConsentMonitor
 import com.jarvis.friday.security.ExploitSimulator
 import com.jarvis.friday.security.InMemoryConsentMonitor
@@ -111,7 +112,7 @@ object JarvisModule {
         val scanner = PortScanner(tcp, scopes)
         val fingerprint = ServiceFingerprinter()
         val engine = com.jarvis.network.NetworkEngine(dns, scanner, fingerprint, scopes, inventory, events)
-        return NetworkSecurityBackend(scopes, engine, TlsInspector(), inventory, tcp, fingerprint, operator)
+        return NetworkSecurityBackend(scopes, engine, TlsInspector(), inventory, tcp, fingerprint, operator, WebSecurityAnalyzer(scopes))
     }
 
     @Provides @Singleton
