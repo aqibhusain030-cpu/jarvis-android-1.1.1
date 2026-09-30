@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
+import android.os.Build
 import com.jarvis.core.capability.*
 
 class PackageBackend(private val context: Context) : CapabilityBackend {
@@ -42,7 +43,12 @@ class PackageBackend(private val context: Context) : CapabilityBackend {
     private fun installed(r: CapabilityRequest): CapabilityResult {
         val pkg = r.arguments["package"]?.trim()?.takeIf { it.isNotEmpty() } ?: return invalid(r)
         val found = runCatching {
-            packageManager.getApplicationInfo(pkg, PackageManager.ApplicationInfoFlags.of(0))
+            if (Build.VERSION.SDK_INT >= 33) {
+                packageManager.getApplicationInfo(pkg, PackageManager.ApplicationInfoFlags.of(0))
+            } else {
+                @Suppress("DEPRECATION")
+                packageManager.getApplicationInfo(pkg, 0)
+            }
         }.isSuccess
         return CapabilityResult.Success(
             r.requestId,
@@ -60,11 +66,16 @@ class PackageBackend(private val context: Context) : CapabilityBackend {
             }
         })
 
-    private fun launchable(): List<ApplicationInfo> =
-        packageManager.queryIntentActivities(
-            Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER),
-            PackageManager.ResolveInfoFlags.of(0)
-        ).map { it.activityInfo.applicationInfo }.distinctBy { it.packageName }
+    private fun launchable(): List<ApplicationInfo> {
+        val intent = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER)
+        val results = if (Build.VERSION.SDK_INT >= 33) {
+            packageManager.queryIntentActivities(intent, PackageManager.ResolveInfoFlags.of(0))
+        } else {
+            @Suppress("DEPRECATION")
+            packageManager.queryIntentActivities(intent, 0)
+        }
+        return results.map { it.activityInfo.applicationInfo }.distinctBy { it.packageName }
+    }
 
     private fun invalid(r: CapabilityRequest) =
         CapabilityResult.Rejected(r.requestId, CapabilityResult.RejectionCode.INVALID_ARGUMENTS, "Package argument is missing.")
