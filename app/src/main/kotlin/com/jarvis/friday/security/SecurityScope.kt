@@ -26,22 +26,25 @@ enum class SecurityEnvironment {
 
 object SecurityScopeDefaults {
     val SAFE_CAPABILITIES: Set<String> = setOf(
-        "dns_resolve",
-        "tcp_probe",
-        "udp_probe",
-        "network_discover",
-        "port_scan",
-        "service_detect",
-        "tls_inspect",
-        "http_inspect",
-        "route_inspect",
-        "network_inventory",
-        "target_profile",
-        "vulnerability_assess",
-        "finding_verify",
-        "network_monitor",
-        "websec_analyze",
-        "mobile_security_audit"
+        "network.dns_resolve",
+        "network.tcp_probe",
+        "network.port_scan",
+        "network.service_detect",
+        "network.tls_inspect",
+        "network.inventory",
+        "network.status",
+        "network.routes",
+        "network.target_profile",
+        "websec.analyze",
+        "security.plan",
+        "security.verify.port",
+        "security.evidence.record",
+        "security.simulate.exploit",
+        "security.assess.app",
+        "security.monitor.enable",
+        "security.monitor.disable",
+        "security.monitor.status",
+        "security.monitor.events"
     )
 }
 
