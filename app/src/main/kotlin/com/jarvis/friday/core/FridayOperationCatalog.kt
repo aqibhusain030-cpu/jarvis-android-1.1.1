@@ -66,7 +66,10 @@ object FridayOperationCatalog {
         op("security.assess", FridayOperationSpec.Domain.SECURITY, "Assess application security posture", "security.assess.app", FridayRisk.MEDIUM),
         op("security.simulate", FridayOperationSpec.Domain.SECURITY, "Model an authorized exploit path", "security.simulate.exploit", FridayRisk.HIGH),
         op("security.monitor", FridayOperationSpec.Domain.SECURITY, "Manage authorized security monitoring", "security.monitor.enable", FridayRisk.HIGH),
-        op("security.scope", FridayOperationSpec.Domain.SECURITY, "Enroll an authorized security target", "security.scope.enroll", FridayRisk.HIGH)
+        op("security.scope", FridayOperationSpec.Domain.SECURITY, "Enroll an authorized security target", "security.scope.enroll", FridayRisk.HIGH),
+        op("security.plan", FridayOperationSpec.Domain.SECURITY, "Generate an authorized assessment plan", "security.plan", FridayRisk.HIGH),
+        op("security.verify", FridayOperationSpec.Domain.SECURITY, "Re-test an authorized security finding", "security.verify.port", FridayRisk.HIGH),
+        op("security.evidence", FridayOperationSpec.Domain.SECURITY, "Record structured security evidence", "security.evidence.record", FridayRisk.MEDIUM)
     )
 
     private fun op(
