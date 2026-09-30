@@ -71,6 +71,15 @@ assert 'Local STT unavailable; transcript dropped' in read("app/src/main/kotlin/
 assert '\\${' not in memory
 assert '\\${' not in read("app/src/main/kotlin/com/jarvis/autonomy/GoalEngine.kt")
 
+assert 'class CapabilityRegistry' in read("app/src/main/kotlin/com/jarvis/core/capability/CapabilityRegistry.kt")
+assert 'class CapabilityExecutor' in read("app/src/main/kotlin/com/jarvis/core/capability/CapabilityExecutor.kt")
+assert 'confirmationGranted' in read("app/src/main/kotlin/com/jarvis/core/capability/CapabilityExecutor.kt")
+assert 'ToolCapabilityBackend' in read("app/src/main/kotlin/com/jarvis/di/JarvisModule.kt")
+assert 'llama_memory_clear(llama_get_memory(h->ctx), true);' in cpp_llama
+assert 'get_news' in read("app/src/main/kotlin/com/jarvis/tools/ToolDispatcher.kt")
+assert 'api.gdeltproject.org' in read("app/src/main/kotlin/com/jarvis/security/SecurityPolicy.kt")
+assert 'latest news' in read("app/src/main/kotlin/com/jarvis/voice/VoiceCommandRouter.kt").lower()
+
 print("source contracts: PASS")
 
 if __name__ == "__main__":
