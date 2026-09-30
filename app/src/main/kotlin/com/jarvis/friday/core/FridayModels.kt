@@ -58,6 +58,7 @@ data class FridayCommand(
     val arguments: Map<String, String> = emptyMap(),
     val risk: FridayRisk = FridayRisk.LOW,
     val confirmationRequired: Boolean = false,
+    val confirmationGranted: Boolean = false,
     val source: String = "voice"
 )
 
