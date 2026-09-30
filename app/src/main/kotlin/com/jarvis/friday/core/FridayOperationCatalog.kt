@@ -46,6 +46,8 @@ object FridayOperationCatalog {
         op("device.bluetooth", Domain.NETWORK, "Inspect or control Bluetooth", "bluetooth"),
         op("network.http_get", Domain.NETWORK, "Perform an allowlisted HTTP GET", "http_get", FridayRisk.HIGH),
         op("network.http_post", Domain.NETWORK, "Perform an allowlisted HTTP POST", "http_post", FridayRisk.HIGH),
+        op("network.news", Domain.NETWORK, "Fetch near-real-time news", "get_news", FridayRisk.MEDIUM),
+        op("device.navigation", Domain.DEVICE, "Perform bounded Android navigation", "device_navigation"),
         op("location.read", Domain.LOCATION, "Read device location", "get_location", FridayRisk.MEDIUM),
         op("location.maps", Domain.LOCATION, "Open a map location", "open_url"),
         op("memory.read", Domain.MEMORY, "Read JARVIS memory", "memory_read"),
