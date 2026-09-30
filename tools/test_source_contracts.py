@@ -93,3 +93,17 @@ print("source contracts: PASS")
 
 if __name__ == "__main__":
     pass
+
+assert 'app/src/main/assets/models/manifest.v1.json' in __import__("pathlib").Path(".").joinpath("app/src/main/assets/models/manifest.v1.json").as_posix()
+model_manager = read("app/src/main/kotlin/com/jarvis/models/ModelManager.kt")
+model_manifest = read("app/src/main/kotlin/com/jarvis/models/ModelManifest.kt")
+model_downloader = read("app/src/main/kotlin/com/jarvis/models/ModelDownloader.kt")
+local_llm = read("app/src/main/kotlin/com/jarvis/brain/LocalLlmEngine.kt")
+stt_bridge = read("app/src/main/kotlin/com/jarvis/voice/SpeechRecognizerBridge.kt")
+assert 'models/manifest.v1.json' in model_manager
+assert 'ModelManifestParser.parse' in model_manager
+assert 'ModelManifestValidator.validate' in model_manifest
+assert 'asset.downloadUrl.contains("/resolve/" + asset.revision + "/" + asset.filename)' in model_manifest
+assert 'read == asset.sizeBytes' in model_downloader
+assert 'models.verify(asset)' in local_llm
+assert 'models.verify(asset)' in stt_bridge
