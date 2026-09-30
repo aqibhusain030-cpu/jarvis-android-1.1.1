@@ -5,6 +5,12 @@ import com.jarvis.capability.accessibility.AccessibilityBackend
 import com.jarvis.capability.accessibility.JarvisAccessibilityService
 import com.jarvis.capability.android.AndroidIntentBackend
 import com.jarvis.capability.android.PackageBackend
+import com.jarvis.capability.security.SecurityLabBackend
+import com.jarvis.friday.security.ConsentMonitor
+import com.jarvis.friday.security.ExploitSimulator
+import com.jarvis.friday.security.InMemoryConsentMonitor
+import com.jarvis.friday.security.SecurityAssessmentEngine
+import com.jarvis.friday.security.SecurityScopeRegistry
 import com.jarvis.core.capability.CapabilityExecutor
 import com.jarvis.core.capability.CapabilityPolicy
 import com.jarvis.core.capability.DefaultCapabilityPolicy
@@ -36,11 +42,24 @@ object JarvisModule {
     fun capabilityRegistry(): CapabilityRegistry = CapabilityRegistry()
 
     @Provides @Singleton
+    fun securityScopes(): SecurityScopeRegistry = SecurityScopeRegistry()
+
+    @Provides @Singleton
+    fun securityAssessment(): SecurityAssessmentEngine = SecurityAssessmentEngine()
+
+    @Provides @Singleton
+    fun exploitSimulator(): ExploitSimulator = ExploitSimulator()
+
+    @Provides @Singleton
+    fun consentMonitor(): ConsentMonitor = InMemoryConsentMonitor()
+
+    @Provides @Singleton
     fun capabilityBackends(
         context: Context
     ): List<com.jarvis.core.capability.CapabilityBackend> = listOf(
         AndroidIntentBackend(context),
         PackageBackend(context),
+        SecurityLabBackend(securityScopes(), securityAssessment(), exploitSimulator(), consentMonitor()),
         AccessibilityBackend(JarvisAccessibilityService.controller())
     )
 
