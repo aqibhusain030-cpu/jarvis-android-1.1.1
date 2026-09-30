@@ -30,7 +30,7 @@ class InMemoryFridayMemory : FridayMemory {
         synchronized(this) {
             events.asSequence()
                 .filter { it.summary.contains(query, true) }
-                .takeLast(limit.coerceIn(1, 5000))
                 .toList()
+                .takeLast(limit.coerceIn(1, 5000))
         }
 }
