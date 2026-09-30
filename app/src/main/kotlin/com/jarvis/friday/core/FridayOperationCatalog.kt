@@ -47,6 +47,8 @@ object FridayOperationCatalog {
         op("network.http_get", FridayOperationSpec.Domain.NETWORK, "Perform an allowlisted HTTP GET", "http_get", FridayRisk.HIGH),
         op("network.dns_resolve", FridayOperationSpec.Domain.NETWORK, "Resolve DNS inside an authorized scope", "network.dns_resolve"),
         op("network.tcp_probe", FridayOperationSpec.Domain.NETWORK, "Probe TCP connectivity inside an authorized scope", "network.tcp_probe", FridayRisk.MEDIUM),
+        op("network.udp_probe", FridayOperationSpec.Domain.NETWORK, "Send a bounded UDP probe inside an authorized scope", "network.udp_probe", FridayRisk.MEDIUM),
+        op("network.websocket_probe", FridayOperationSpec.Domain.NETWORK, "Probe secure WebSocket connectivity inside an authorized scope", "network.websocket_probe", FridayRisk.MEDIUM),
         op("network.port_scan", FridayOperationSpec.Domain.NETWORK, "Perform a bounded port scan inside an authorized scope", "network.port_scan", FridayRisk.HIGH),
         op("network.service_detect", FridayOperationSpec.Domain.NETWORK, "Identify an observed service inside an authorized scope", "network.service_detect", FridayRisk.MEDIUM),
         op("network.tls_inspect", FridayOperationSpec.Domain.NETWORK, "Inspect TLS metadata inside an authorized scope", "network.tls_inspect", FridayRisk.MEDIUM),
