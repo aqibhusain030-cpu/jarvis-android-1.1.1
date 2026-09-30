@@ -2,12 +2,14 @@ package com.jarvis.capability.security
 
 import com.jarvis.core.capability.*
 import com.jarvis.friday.security.*
+import com.jarvis.core.capability.OperatorAuthorization
 
 class SecurityLabBackend(
     private val scopes: SecurityScopeRegistry,
     private val assessment: SecurityAssessmentEngine,
     private val simulator: ExploitSimulator,
-    private val monitor: ConsentMonitor
+    private val monitor: ConsentMonitor,
+    private val operator: OperatorAuthorization
 ) : CapabilityBackend {
     override val backendId = "friday.security"
     override val capabilities = setOf(
@@ -20,7 +22,15 @@ class SecurityLabBackend(
         Capability("security.monitor.events", "Read recent security monitoring events", Capability.RiskLevel.MEDIUM)
     )
 
-    override suspend fun execute(r: CapabilityRequest): CapabilityResult = when (r.capabilityId) {
+    override suspend fun execute(r: CapabilityRequest): CapabilityResult {
+        if (!operator.consume()) {
+            return CapabilityResult.Rejected(
+                r.requestId,
+                CapabilityResult.RejectionCode.POLICY_DENIED,
+                "Fresh operator authorization is required for security operations."
+            )
+        }
+        return when (r.capabilityId) {
         "security.scope.enroll" -> enroll(r)
         "security.assess.app" -> assess(r)
         "security.simulate.exploit" -> simulate(r)
