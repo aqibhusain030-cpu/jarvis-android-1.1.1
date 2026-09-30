@@ -78,10 +78,8 @@ object JarvisModule {
         registry: CapabilityRegistry,
         backends: List<com.jarvis.core.capability.CapabilityBackend>
     ): CapabilityExecutor {
-        kotlinx.coroutines.runBlocking {
-            backends.forEachIndexed { index, backend ->
-                registry.register(backend, priority = 100 - index)
-            }
+        backends.forEachIndexed { index, backend ->
+            registry.register(backend, priority = 100 - index)
         }
         return CapabilityExecutor(
             registry = registry,
