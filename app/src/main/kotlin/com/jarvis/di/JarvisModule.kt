@@ -1,6 +1,5 @@
 package com.jarvis.di
 
-import android.content.Context
 import com.jarvis.capability.accessibility.AccessibilityBackend
 import com.jarvis.capability.accessibility.JarvisAccessibilityService
 import com.jarvis.capability.android.AndroidIntentBackend
@@ -28,14 +27,7 @@ object JarvisModule {
     fun scope(): CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
     @Provides @Singleton
-    fun capabilityRegistry(
-        context: Context
-    ): CapabilityRegistry {
-        // The registry is synchronous at construction time; registration itself
-        // is suspendable, so bootstrap it through a dedicated coroutine scope.
-        // Backends are installed by CapabilityBootstrap below.
-        return CapabilityRegistry()
-    }
+    fun capabilityRegistry(): CapabilityRegistry = CapabilityRegistry()
 
     @Provides @Singleton
     fun capabilityBackends(
