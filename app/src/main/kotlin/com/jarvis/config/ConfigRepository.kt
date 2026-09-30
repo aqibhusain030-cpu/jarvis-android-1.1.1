@@ -96,6 +96,25 @@ class ConfigRepository @Inject constructor(
         )
     }
 
+    suspend fun setRemoteInference(
+        enabled: Boolean,
+        baseUrl: String,
+        model: String,
+        timeoutMs: Int
+    ) {
+        require(baseUrl.length <= 2048)
+        require(model.isNotBlank() && model.length <= 256)
+        require(timeoutMs in 5_000..300_000)
+
+        ctx.dataStore.edit { prefs ->
+            prefs[KEY_REMOTE] = enabled
+            prefs[KEY_REMOTE_URL] = baseUrl.trim()
+            prefs[KEY_REMOTE_MODEL] = model.trim()
+            prefs[KEY_REMOTE_TIMEOUT] = timeoutMs
+        }
+        current.value = load()
+    }
+
     fun dir(name: String): File = File(ctx.filesDir, name).apply { mkdirs() }
 
     fun modelFile(kind: String, name: String): File =
