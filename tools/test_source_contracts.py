@@ -91,6 +91,30 @@ assert 'register(appSchema); register(appTask)' in read("app/src/main/kotlin/com
 assert '<category android:name="android.intent.category.LAUNCHER"/>' in read("app/src/main/AndroidManifest.xml")
 assert 'latest news' in read("app/src/main/kotlin/com/jarvis/voice/VoiceCommandRouter.kt").lower()
 
+
+assert 'class NetworkSecurityBackend' in read("app/src/main/kotlin/com/jarvis/capability/network/NetworkSecurityBackend.kt")
+assert 'class SecurityAssessmentBackend' in read("app/src/main/kotlin/com/jarvis/capability/security/SecurityAssessmentBackend.kt")
+assert 'class SecurityScopeRegistry' in read("app/src/main/kotlin/com/jarvis/friday/security/SecurityScope.kt")
+assert 'TargetMatcher' in read("app/src/main/kotlin/com/jarvis/friday/security/SecurityScope.kt")
+assert 'authorizationProof' in read("app/src/main/kotlin/com/jarvis/friday/security/SecurityScope.kt")
+assert 'class PortScanner' in read("app/src/main/kotlin/com/jarvis/network/PortScanner.kt")
+assert 'take(256)' in read("app/src/main/kotlin/com/jarvis/network/PortScanner.kt")
+assert 'Semaphore(16)' in read("app/src/main/kotlin/com/jarvis/network/PortScanner.kt")
+assert 'class TlsInspector' in read("app/src/main/kotlin/com/jarvis/network/TlsInspector.kt")
+assert 'class NetworkMonitor' in read("app/src/main/kotlin/com/jarvis/network/NetworkMonitor.kt")
+assert 'registerDefaultNetworkCallback' in read("app/src/main/kotlin/com/jarvis/network/NetworkMonitor.kt")
+assert 'class RouteInspector' in read("app/src/main/kotlin/com/jarvis/network/RouteInspector.kt")
+assert 'class WebSecurityAnalyzer' in read("app/src/main/kotlin/com/jarvis/security/web/WebSecurityAnalyzer.kt")
+assert 'Strict-Transport-Security' in read("app/src/main/kotlin/com/jarvis/security/web/WebSecurityAnalyzer.kt")
+assert 'class SecurityPlanEngine' in read("app/src/main/kotlin/com/jarvis/security/assessment/SecurityPlanEngine.kt")
+assert 'class SecurityEvidenceStore' in read("app/src/main/kotlin/com/jarvis/security/assessment/SecurityEvidenceStore.kt")
+assert 'integrityHash' in read("app/src/main/kotlin/com/jarvis/security/assessment/SecurityEvidenceStore.kt")
+assert 'class FindingVerifier' in read("app/src/main/kotlin/com/jarvis/security/assessment/FindingVerifier.kt")
+assert 'class SecurityCapabilityTool' in read("app/src/main/kotlin/com/jarvis/tools/impl/SecurityCapabilityTool.kt")
+assert 'security_capability' in read("app/src/main/kotlin/com/jarvis/security/SecurityPolicy.kt")
+assert 'JARVIS Android Security and Network Architecture' in read("docs/security/JARVIS_SECURITY_NETWORK_ARCHITECTURE.md")
+assert 'timeoutMs: Long = 15_000L' in read("app/src/main/kotlin/com/jarvis/core/capability/Capability.kt")
+
 print("source contracts: PASS")
 
 if __name__ == "__main__":
