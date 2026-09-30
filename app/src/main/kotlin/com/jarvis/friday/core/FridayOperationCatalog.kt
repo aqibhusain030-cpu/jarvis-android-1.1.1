@@ -52,6 +52,7 @@ object FridayOperationCatalog {
         op("network.tls_inspect", FridayOperationSpec.Domain.NETWORK, "Inspect TLS metadata inside an authorized scope", "network.tls_inspect", FridayRisk.MEDIUM),
         op("network.inventory", FridayOperationSpec.Domain.NETWORK, "Read the authorized network inventory", "network.inventory"),
         op("network.target_profile", FridayOperationSpec.Domain.NETWORK, "Build a structured authorized target profile", "network.target_profile", FridayRisk.MEDIUM),
+        op("websec.analyze", FridayOperationSpec.Domain.SECURITY, "Analyze safe web security controls in an authorized scope", "websec.analyze", FridayRisk.HIGH),
         op("network.http_post", FridayOperationSpec.Domain.NETWORK, "Perform an allowlisted HTTP POST", "http_post", FridayRisk.HIGH),
         op("network.news", FridayOperationSpec.Domain.NETWORK, "Fetch near-real-time news", "get_news", FridayRisk.LOW),
         op("device.navigation", FridayOperationSpec.Domain.DEVICE, "Perform bounded Android navigation", "device_navigation"),
