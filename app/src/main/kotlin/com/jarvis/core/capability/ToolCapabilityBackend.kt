@@ -60,8 +60,9 @@ class ToolCapabilityBackend(
         raw: Map<String, String>
     ): Map<String, Any?>? {
         if (raw.keys.any { it !in specs.keys }) return null
-        return raw.mapValues { (name, value) ->
-            when (specs[name]?.type?.lowercase()) {
+        val converted = linkedMapOf<String, Any?>()
+        for ((name, value) in raw) {
+            val convertedValue: Any? = when (specs[name]?.type?.lowercase()) {
                 "string", null -> value
                 "int", "integer" -> value.toIntOrNull() ?: return null
                 "long" -> value.toLongOrNull() ?: return null
@@ -70,7 +71,9 @@ class ToolCapabilityBackend(
                 "bool", "boolean" -> value.toBooleanStrictOrNull() ?: return null
                 else -> value
             }
+            converted[name] = convertedValue
         }
+        return converted
     }
 
     private fun mapRisk(risk: com.jarvis.friday.core.FridayRisk): Capability.RiskLevel = when (risk) {
