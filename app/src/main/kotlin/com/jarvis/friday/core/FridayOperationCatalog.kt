@@ -66,6 +66,7 @@ object FridayOperationCatalog {
         domain: FridayOperationSpec.Domain,
         description: String,
         tool: String? = null,
-        risk: FridayRisk = FridayRisk.LOW
-    ) = FridayOperationSpec(id, domain, description, tool, risk)
+        risk: FridayRisk = FridayRisk.LOW,
+        supported: Boolean = true
+    ) = FridayOperationSpec(id, domain, description, tool, risk, supported)
 }
