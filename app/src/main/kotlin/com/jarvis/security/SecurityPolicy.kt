@@ -53,7 +53,7 @@ class SecurityPolicy @Inject constructor(private val config: ConfigRepository) {
         if (c.communicationRequireConfirmation && name in communication) return true
         if (c.httpPostRequiresConfirmation && name == "http_post") return true
         if (c.fileDeleteRequiresConfirmation && name.startsWith("file_")) return true
-        if (name in networkTools) return true
+        if (name in networkTools && name !in setOf("get_news", "get_weather")) return true
         if (name in sensitiveReads) return true
         if (name in consequentialWrites) return true
         return false
