@@ -52,6 +52,10 @@ class ConfigRepository @Inject constructor(
                 prefs[KEY_SHELL] = seed.shellEnabled
                 prefs[KEY_PIN] = seed.pinRequiredForHighRisk
                 prefs[KEY_CLOUD] = seed.cloudFallbackEnabled
+                prefs[KEY_REMOTE] = seed.remoteInferenceEnabled
+                prefs[KEY_REMOTE_URL] = seed.remoteInferenceBaseUrl
+                prefs[KEY_REMOTE_MODEL] = seed.remoteInferenceModel
+                prefs[KEY_REMOTE_TIMEOUT] = seed.remoteInferenceTimeoutMs
                 prefs[KEY_KILL_PHRASE] = seed.killPhraseEnabled
                 prefs[KEY_MAX_GOALS] = seed.maxActiveGoals
                 prefs[KEY_MAX_TOOL_CALLS] = seed.maxToolCallsPerGoal
@@ -84,6 +88,10 @@ class ConfigRepository @Inject constructor(
             shellEnabled = p[KEY_SHELL] ?: false,
             pinRequiredForHighRisk = p[KEY_PIN] ?: true,
             cloudFallbackEnabled = p[KEY_CLOUD] ?: false,
+            remoteInferenceEnabled = p[KEY_REMOTE] ?: false,
+            remoteInferenceBaseUrl = p[KEY_REMOTE_URL] ?: "",
+            remoteInferenceModel = p[KEY_REMOTE_MODEL] ?: "JARVIS-2T-MoE",
+            remoteInferenceTimeoutMs = p[KEY_REMOTE_TIMEOUT] ?: 60000,
             killPhraseEnabled = p[KEY_KILL_PHRASE] ?: true
         )
     }
@@ -113,6 +121,10 @@ class ConfigRepository @Inject constructor(
         private val KEY_SHELL = booleanPreferencesKey("shell")
         private val KEY_PIN = booleanPreferencesKey("pin")
         private val KEY_CLOUD = booleanPreferencesKey("cloud")
+        private val KEY_REMOTE = booleanPreferencesKey("remote_enabled")
+        private val KEY_REMOTE_URL = stringPreferencesKey("remote_url")
+        private val KEY_REMOTE_MODEL = stringPreferencesKey("remote_model")
+        private val KEY_REMOTE_TIMEOUT = intPreferencesKey("remote_timeout_ms")
         private val KEY_MAX_GOALS = intPreferencesKey("max_goals")
         private val KEY_MAX_TOOL_CALLS = intPreferencesKey("max_tool_calls")
         private val KEY_KILL_PHRASE = booleanPreferencesKey("kill_phrase")
