@@ -32,7 +32,8 @@ class SecurityCapabilityTool @Inject constructor(
         "network.service_detect",
         "network.tls_inspect",
         "network.inventory",
-        "network.target_profile"
+        "network.target_profile",
+        "websec.analyze"
     )
 
     override val spec = ToolSpec(
