@@ -18,7 +18,9 @@ class NetworkSecurityBackend @Inject constructor(
     private val tcp: TcpProbe,
     private val fingerprint: ServiceFingerprinter,
     private val operator: OperatorAuthorization,
-    private val web: WebSecurityAnalyzer
+    private val web: WebSecurityAnalyzer,
+    private val monitor: NetworkMonitor,
+    private val routes: RouteInspector
 ) : CapabilityBackend {
     override val backendId = "friday.network"
     override val capabilities = setOf(
@@ -28,6 +30,8 @@ class NetworkSecurityBackend @Inject constructor(
         Capability("network.service_detect", "Identify services from authorized port observations", Capability.RiskLevel.MEDIUM),
         Capability("network.tls_inspect", "Inspect TLS metadata within an authorized security scope", Capability.RiskLevel.MEDIUM),
         Capability("network.inventory", "Read the authorized network asset inventory"),
+        Capability("network.status", "Read Android network connectivity state"),
+        Capability("network.routes", "Read current Android route and DNS state"),
         Capability("network.target_profile", "Build a structured profile from authorized observations", Capability.RiskLevel.MEDIUM),
         Capability("websec.analyze", "Analyze safe web security headers and cookies within an authorized scope", Capability.RiskLevel.HIGH, timeoutMs = 30_000L)
     )
@@ -75,6 +79,25 @@ class NetworkSecurityBackend @Inject constructor(
                     "cipher" to result.cipherSuite,
                     "subject" to (result.subject ?: ""),
                     "issuer" to (result.issuer ?: "")
+                ))
+            }
+            "network.status" -> {
+                val state = monitor.current()
+                CapabilityResult.Success(r.requestId, "Network status retrieved.", mapOf(
+                    "available" to state.available.toString(),
+                    "transport" to (state.transport ?: ""),
+                    "validated" to state.validated.toString(),
+                    "metered" to state.metered.toString(),
+                    "interface" to (state.interfaceName ?: ""),
+                    "dns" to state.dnsServers.joinToString(",")
+                ))
+            }
+            "network.routes" -> {
+                val snapshot = routes.inspect()
+                CapabilityResult.Success(r.requestId, "Network routes retrieved.", mapOf(
+                    "interface" to (snapshot.interfaceName ?: ""),
+                    "routes" to snapshot.routes.joinToString("\n"),
+                    "dns" to snapshot.dnsServers.joinToString(",")
                 ))
             }
             "network.inventory" -> {
