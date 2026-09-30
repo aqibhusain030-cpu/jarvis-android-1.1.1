@@ -46,6 +46,7 @@ class JarvisForegroundService : LifecycleService() {
     @Inject lateinit var logger: JarvisLogger
     @Inject lateinit var bargeIn: BargeInController
     @Inject lateinit var confirmation: ConfirmationManager
+    @Inject lateinit var voiceRouter: com.jarvis.voice.VoiceCommandRouter
 
     private var wakeLock: PowerManager.WakeLock? = null
     private var watchdog: JarvisWatchdog? = null
@@ -119,10 +120,14 @@ class JarvisForegroundService : LifecycleService() {
                 // A separate listener coroutine handles confirmation while brain.respond()
                 // is blocked awaiting the result of ToolDispatcher.confirmation.ask().
                 memory.appendMessage("user", text, config.current.value.defaultLanguage)
-                val reply = brain.respond(text)
+
+                val routed = runCatching { voiceRouter.execute(text) }.getOrNull()
+                val replyText = routed?.reply ?: brain.respond(text).text
+                val replyLanguage = config.current.value.defaultLanguage
+
                 updateNotification(getString(R.string.svc_speaking))
-                tts.speak(reply.text)
-                memory.appendMessage("assistant", reply.text, reply.language)
+                tts.speak(replyText)
+                memory.appendMessage("assistant", replyText, replyLanguage)
                 watchdog?.beat()
             } catch (ce: CancellationException) { throw ce }
             catch (t: Throwable) {
