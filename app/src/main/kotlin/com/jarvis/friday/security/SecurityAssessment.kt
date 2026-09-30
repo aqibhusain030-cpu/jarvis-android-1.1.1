@@ -63,7 +63,7 @@ class SecurityAssessmentEngine {
             )
         }
 
-        val penalty = findings.sumOf {
+        val penalty: Int = findings.sumOf {
             when (it.severity) {
                 SecurityFinding.Severity.INFO -> 0
                 SecurityFinding.Severity.LOW -> 5
