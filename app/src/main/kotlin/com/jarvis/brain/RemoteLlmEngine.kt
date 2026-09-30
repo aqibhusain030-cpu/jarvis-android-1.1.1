@@ -27,7 +27,8 @@ import javax.inject.Singleton
 @Singleton
 class RemoteLlmEngine @Inject constructor(
     private val config: ConfigRepository,
-    private val logger: JarvisLogger
+    private val logger: JarvisLogger,
+    private val credentials: RemoteInferenceCredentialStore
 ) {
     private val json = Json { ignoreUnknownKeys = true }
     private val client = OkHttpClient.Builder()
@@ -66,6 +67,9 @@ class RemoteLlmEngine @Inject constructor(
             .url(if (base.endsWith("/v1", ignoreCase = true)) "$base/chat/completions" else "$base/v1/chat/completions")
             .post(body.toRequestBody("application/json".toMediaType()))
             .header("Accept", "application/json")
+            .apply {
+                credentials.getToken()?.let { header("Authorization", "Bearer " + it) }
+            }
             .build()
 
         runCatching {
