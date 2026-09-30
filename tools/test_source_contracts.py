@@ -131,3 +131,6 @@ assert 'setRemoteInference' in read("app/src/main/kotlin/com/jarvis/config/Confi
 assert 'RemoteInferenceCredentialStore' in read("app/src/main/kotlin/com/jarvis/MainActivity.kt")
 assert 'Save' in read("app/src/main/kotlin/com/jarvis/ui/SettingsScreen.kt")
 assert 'clear()' in read("app/src/main/kotlin/com/jarvis/brain/RemoteInferenceCredentialStore.kt")
+
+assert 'remoteInferenceEnabled) true else llm.loadLocal()' in read("app/src/main/kotlin/com/jarvis/brain/BrainBootstrap.kt")
+assert 'if (!local.loadIfNeeded()) return ""' in read("app/src/main/kotlin/com/jarvis/brain/HybridLlmEngine.kt")
