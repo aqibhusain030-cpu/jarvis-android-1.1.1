@@ -78,6 +78,8 @@ assert 'ToolCapabilityBackend' in read("app/src/main/kotlin/com/jarvis/di/Jarvis
 assert 'llama_memory_clear(llama_get_memory(h->ctx), true);' in cpp_llama
 assert 'get_news' in read("app/src/main/kotlin/com/jarvis/tools/ToolDispatcher.kt")
 assert 'api.gdeltproject.org' in read("app/src/main/kotlin/com/jarvis/security/SecurityPolicy.kt")
+assert '<queries>' in read("app/src/main/AndroidManifest.xml")
+assert '<category android:name="android.intent.category.LAUNCHER"/>' in read("app/src/main/AndroidManifest.xml")
 assert 'latest news' in read("app/src/main/kotlin/com/jarvis/voice/VoiceCommandRouter.kt").lower()
 
 print("source contracts: PASS")
