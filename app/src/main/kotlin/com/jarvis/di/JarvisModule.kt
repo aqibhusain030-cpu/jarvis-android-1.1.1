@@ -6,6 +6,18 @@ import com.jarvis.capability.accessibility.JarvisAccessibilityService
 import com.jarvis.capability.android.AndroidIntentBackend
 import com.jarvis.capability.android.PackageBackend
 import com.jarvis.capability.security.SecurityLabBackend
+import com.jarvis.capability.network.NetworkSecurityBackend
+import com.jarvis.capability.security.SecurityAssessmentBackend
+import com.jarvis.network.DnsResolver
+import com.jarvis.network.PortScanner
+import com.jarvis.network.TcpProbe
+import com.jarvis.network.ServiceFingerprinter
+import com.jarvis.network.NetworkMonitor
+import com.jarvis.network.RouteInspector
+import com.jarvis.network.UdpProbe
+import com.jarvis.network.WebSocketProbe
+import com.jarvis.network.TlsInspector
+import com.jarvis.security.web.WebSecurityAnalyzer
 import com.jarvis.friday.security.ConsentMonitor
 import com.jarvis.friday.security.ExploitSimulator
 import com.jarvis.friday.security.InMemoryConsentMonitor
@@ -66,12 +78,16 @@ object JarvisModule {
         simulator: ExploitSimulator,
         monitor: ConsentMonitor,
         operator: OperatorAuthorization,
+        networkBackend: NetworkSecurityBackend,
+        securityAssessmentBackend: SecurityAssessmentBackend,
         toolRegistry: ToolRegistry,
         toolDispatcher: com.jarvis.tools.ToolDispatcher
     ): List<com.jarvis.core.capability.CapabilityBackend> = listOf(
         AndroidIntentBackend(context),
         PackageBackend(context),
         SecurityLabBackend(scopes, assessment, simulator, monitor, operator),
+        networkBackend,
+        securityAssessmentBackend,
         AccessibilityBackend(JarvisAccessibilityService.controller()),
         com.jarvis.core.capability.ToolCapabilityBackend(toolRegistry, toolDispatcher)
     )
@@ -86,8 +102,24 @@ object JarvisModule {
         }
         return CapabilityExecutor(
             registry = registry,
-            policyProvider = CapabilityPolicy(DefaultCapabilityPolicy())
+            policyProvider = DefaultCapabilityPolicy()
         )
+    }
+
+
+    @Provides @Singleton
+    fun networkSecurityBackend(
+        scopes: SecurityScopeRegistry,
+        events: com.jarvis.network.NetworkEventBus,
+        inventory: com.jarvis.network.NetworkInventory,
+        operator: OperatorAuthorization
+    ): NetworkSecurityBackend {
+        val dns = DnsResolver()
+        val tcp = TcpProbe()
+        val scanner = PortScanner(tcp, scopes)
+        val fingerprint = ServiceFingerprinter()
+        val engine = com.jarvis.network.NetworkEngine(dns, scanner, fingerprint, scopes, inventory, events)
+        return NetworkSecurityBackend(scopes, engine, TlsInspector(), inventory, tcp, fingerprint, operator, WebSecurityAnalyzer(scopes), NetworkMonitor(context), RouteInspector(context), UdpProbe(), WebSocketProbe())
     }
 
     @Provides @Singleton
@@ -114,7 +146,7 @@ object JarvisModule {
         memory: MemoryTool, goal: GoalTool, notify: NotifyTool,
         sys: SystemTool, weather: WeatherTool, news: NewsTool,
         deviceNavigation: DeviceNavigationTool, appSchema: AppSchemaTool,
-        appTask: AppTaskTool
+        appTask: AppTaskTool, securityCapability: SecurityCapabilityTool
     ): ToolRegistry = ToolRegistry().apply {
         register(torch); register(battery); register(sms); register(call)
         register(contacts); register(notif); register(loc); register(vol)
@@ -123,6 +155,6 @@ object JarvisModule {
         register(shot); register(cam); register(wifi); register(bt)
         register(http); register(memory); register(goal); register(notify)
         register(sys); register(weather); register(news); register(deviceNavigation)
-        register(appSchema); register(appTask)
+        register(appSchema); register(appTask); register(securityCapability)
     }
 }
