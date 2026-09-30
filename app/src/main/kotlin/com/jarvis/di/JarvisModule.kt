@@ -138,7 +138,7 @@ object JarvisModule {
         memory: MemoryTool, goal: GoalTool, notify: NotifyTool,
         sys: SystemTool, weather: WeatherTool, news: NewsTool,
         deviceNavigation: DeviceNavigationTool, appSchema: AppSchemaTool,
-        appTask: AppTaskTool
+        appTask: AppTaskTool, securityCapability: SecurityCapabilityTool
     ): ToolRegistry = ToolRegistry().apply {
         register(torch); register(battery); register(sms); register(call)
         register(contacts); register(notif); register(loc); register(vol)
@@ -147,6 +147,6 @@ object JarvisModule {
         register(shot); register(cam); register(wifi); register(bt)
         register(http); register(memory); register(goal); register(notify)
         register(sys); register(weather); register(news); register(deviceNavigation)
-        register(appSchema); register(appTask)
+        register(appSchema); register(appTask); register(securityCapability)
     }
 }
