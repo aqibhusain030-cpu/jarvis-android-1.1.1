@@ -63,7 +63,7 @@ class RemoteLlmEngine @Inject constructor(
         }.toString()
 
         val request = Request.Builder()
-            .url("$base/v1/chat/completions")
+            .url(if (base.endsWith("/v1", ignoreCase = true)) "$base/chat/completions" else "$base/v1/chat/completions")
             .post(body.toRequestBody("application/json".toMediaType()))
             .header("Accept", "application/json")
             .build()
