@@ -65,12 +65,15 @@ object JarvisModule {
         assessment: SecurityAssessmentEngine,
         simulator: ExploitSimulator,
         monitor: ConsentMonitor,
-        operator: OperatorAuthorization
+        operator: OperatorAuthorization,
+        toolRegistry: ToolRegistry,
+        toolDispatcher: com.jarvis.tools.ToolDispatcher
     ): List<com.jarvis.core.capability.CapabilityBackend> = listOf(
         AndroidIntentBackend(context),
         PackageBackend(context),
         SecurityLabBackend(scopes, assessment, simulator, monitor, operator),
-        AccessibilityBackend(JarvisAccessibilityService.controller())
+        AccessibilityBackend(JarvisAccessibilityService.controller()),
+        com.jarvis.core.capability.ToolCapabilityBackend(toolRegistry, toolDispatcher)
     )
 
     @Provides @Singleton
