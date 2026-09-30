@@ -79,6 +79,13 @@ assert 'llama_memory_clear(llama_get_memory(h->ctx), true);' in cpp_llama
 assert 'get_news' in read("app/src/main/kotlin/com/jarvis/tools/ToolDispatcher.kt")
 assert 'api.gdeltproject.org' in read("app/src/main/kotlin/com/jarvis/security/SecurityPolicy.kt")
 assert '<queries>' in read("app/src/main/AndroidManifest.xml")
+assert 'canRetrieveWindowContent="true"' in read("app/src/main/res/xml/jarvis_accessibility_service.xml")
+assert 'typeWindowContentChanged' in read("app/src/main/res/xml/jarvis_accessibility_service.xml")
+assert 'class AppSchemaRegistry' in read("app/src/main/kotlin/com/jarvis/app/AppSchemaRegistry.kt")
+assert 'name = "inspect_app_ui"' in read("app/src/main/kotlin/com/jarvis/tools/impl/AppSchemaTool.kt")
+assert 'name = "execute_app_task"' in read("app/src/main/kotlin/com/jarvis/tools/impl/AppTaskTool.kt")
+assert 'active_app_changed' in read("app/src/main/kotlin/com/jarvis/tools/impl/AppTaskTool.kt")
+assert 'register(appSchema); register(appTask)' in read("app/src/main/kotlin/com/jarvis/di/JarvisModule.kt")
 assert '<category android:name="android.intent.category.LAUNCHER"/>' in read("app/src/main/AndroidManifest.xml")
 assert 'latest news' in read("app/src/main/kotlin/com/jarvis/voice/VoiceCommandRouter.kt").lower()
 
