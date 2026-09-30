@@ -127,7 +127,7 @@ class VoiceCommandRouter @Inject constructor(
             "^(?:(?:give|show|tell) me )?(?:the )?(?:latest |today(?:'s )?|breaking )?(?:news|headlines|khabar|khabrein|खबर|खबरें|समाचार)$"
         )
         private val NEWS_ABOUT = Regex(
-            "^(?:give|show|tell) (?:me )?(?:the )?(?:latest |today(?:'s )?|breaking )?(?:news|headlines) (?:about|on|for|regarding) (.+)$"
+            "^(?:(?:give|show|tell) (?:me )?)?(?:the )?(?:latest |today(?:'s )?|breaking )?(?:news|headlines) (?:about|on|for|regarding) (.+)$"
         )
         private val NEWS_HINGLISH = Regex(
             "^(.+?) (?:ki|ke|ka) (?:latest )?(?:news|khabar|khabrein)$"
