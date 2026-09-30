@@ -4,6 +4,7 @@ import com.jarvis.core.capability.*
 import com.jarvis.friday.security.SecurityRisk
 import com.jarvis.friday.security.SecurityScopeRegistry
 import com.jarvis.network.*
+import com.jarvis.security.web.WebSecurityAnalyzer
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -16,7 +17,8 @@ class NetworkSecurityBackend @Inject constructor(
     private val inventory: NetworkInventory,
     private val tcp: TcpProbe,
     private val fingerprint: ServiceFingerprinter,
-    private val operator: OperatorAuthorization
+    private val operator: OperatorAuthorization,
+    private val web: WebSecurityAnalyzer
 ) : CapabilityBackend {
     override val backendId = "friday.network"
     override val capabilities = setOf(
@@ -26,7 +28,8 @@ class NetworkSecurityBackend @Inject constructor(
         Capability("network.service_detect", "Identify services from authorized port observations", Capability.RiskLevel.MEDIUM),
         Capability("network.tls_inspect", "Inspect TLS metadata within an authorized security scope", Capability.RiskLevel.MEDIUM),
         Capability("network.inventory", "Read the authorized network asset inventory"),
-        Capability("network.target_profile", "Build a structured profile from authorized observations", Capability.RiskLevel.MEDIUM)
+        Capability("network.target_profile", "Build a structured profile from authorized observations", Capability.RiskLevel.MEDIUM),
+        Capability("websec.analyze", "Analyze safe web security headers and cookies within an authorized scope", Capability.RiskLevel.HIGH, timeoutMs = 30_000L)
     )
 
     override suspend fun execute(r: CapabilityRequest): CapabilityResult {
@@ -80,6 +83,14 @@ class NetworkSecurityBackend @Inject constructor(
                 CapabilityResult.Success(r.requestId, "Network inventory retrieved.", mapOf(
                     "count" to rows.size.toString(),
                     "assets" to rows.joinToString("\n") { it.address + "|" + it.openServices.joinToString(",") { s -> s.port.toString() + "/" + s.service } }
+                ))
+            }
+            "websec.analyze" -> {
+                if (!scopes.isAuthorized(scopeId, target, "websec_analyze", SecurityRisk.R3_VALIDATION)) return denied(r)
+                val assessment = web.analyze(scopeId, target)
+                CapabilityResult.Success(r.requestId, "Web security analysis completed.", mapOf(
+                    "status" to assessment.statusCode.toString(),
+                    "findings" to assessment.findings.joinToString("\n") { it.id + "|" + it.severity + "|" + it.title }
                 ))
             }
             "network.target_profile" -> {
