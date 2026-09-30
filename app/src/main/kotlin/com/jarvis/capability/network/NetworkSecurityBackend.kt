@@ -6,7 +6,6 @@ import com.jarvis.friday.security.SecurityScopeRegistry
 import com.jarvis.network.*
 import com.jarvis.security.web.WebSecurityAnalyzer
 import java.util.UUID
-import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
