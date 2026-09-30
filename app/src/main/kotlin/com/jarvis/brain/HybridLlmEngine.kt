@@ -26,6 +26,7 @@ class HybridLlmEngine @Inject constructor(
         }
         if (remoteResult.isNotBlank()) return remoteResult
 
+        if (!local.loadIfNeeded()) return ""
         return local.generate(prompt, maxTokens, temperature).also {
             if (it.isBlank()) logger.w(TAG, "Both remote and local inference returned no output")
         }
