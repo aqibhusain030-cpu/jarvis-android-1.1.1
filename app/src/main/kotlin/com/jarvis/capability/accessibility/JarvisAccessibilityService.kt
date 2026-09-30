@@ -41,7 +41,7 @@ class JarvisAccessibilityService : AccessibilityService() {
                     AccessibilityController.GlobalAction.LOCK_SCREEN ->
                         if (android.os.Build.VERSION.SDK_INT >= 28) GLOBAL_ACTION_LOCK_SCREEN else return false
                     AccessibilityController.GlobalAction.TAKE_SCREENSHOT ->
-                        if (android.os.Build.VERSION.SDK_INT >= 28) GLOBAL_ACTION_TAKE_SCREENSHOT else return false
+                        if (android.os.Build.VERSION.SDK_INT >= 30) GLOBAL_ACTION_TAKE_SCREENSHOT else return false
                 }
                 return service.performGlobalAction(androidAction)
             }
