@@ -54,6 +54,8 @@ data class VitalSnapshot(
 data class FridayCommand(
     val id: String = UUID.randomUUID().toString(),
     val text: String,
+    val capabilityId: String? = null,
+    val arguments: Map<String, String> = emptyMap(),
     val risk: FridayRisk = FridayRisk.LOW,
     val confirmationRequired: Boolean = false,
     val source: String = "voice"
