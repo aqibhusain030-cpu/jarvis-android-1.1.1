@@ -38,7 +38,8 @@ class SecurityPolicy @Inject constructor(private val config: ConfigRepository) {
         "api.open-meteo.com",
         "huggingface.co",
         "github.com",
-        "objects.githubusercontent.com"
+        "objects.githubusercontent.com",
+        "api.gdeltproject.org"
     )
 
     fun toolAllowed(name: String): Boolean = when (name) {
