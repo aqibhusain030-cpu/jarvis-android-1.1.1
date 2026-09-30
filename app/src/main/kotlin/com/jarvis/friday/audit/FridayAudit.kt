@@ -14,9 +14,11 @@ data class FridayAuditEvent(
 
 class InMemoryFridayAudit : FridayAuditSink {
     private val events = ArrayDeque<FridayAuditEvent>()
-    @Synchronized override suspend fun append(event: FridayAuditEvent) {
-        events.addLast(event)
-        while (events.size > 5000) events.removeFirst()
+    override suspend fun append(event: FridayAuditEvent) {
+        synchronized(this) {
+            events.addLast(event)
+            while (events.size > 5000) events.removeFirst()
+        }
     }
     fun size(): Int = synchronized(this) { events.size }
 }
