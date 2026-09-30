@@ -55,11 +55,15 @@ object JarvisModule {
 
     @Provides @Singleton
     fun capabilityBackends(
-        context: Context
+        context: Context,
+        scopes: SecurityScopeRegistry,
+        assessment: SecurityAssessmentEngine,
+        simulator: ExploitSimulator,
+        monitor: ConsentMonitor
     ): List<com.jarvis.core.capability.CapabilityBackend> = listOf(
         AndroidIntentBackend(context),
         PackageBackend(context),
-        SecurityLabBackend(securityScopes(), securityAssessment(), exploitSimulator(), consentMonitor()),
+        SecurityLabBackend(scopes, assessment, simulator, monitor),
         AccessibilityBackend(JarvisAccessibilityService.controller())
     )
 
