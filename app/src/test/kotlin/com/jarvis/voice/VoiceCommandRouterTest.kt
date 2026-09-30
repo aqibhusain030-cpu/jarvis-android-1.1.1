@@ -28,6 +28,18 @@ class VoiceCommandRouterTest {
     }
 
     @Test
+    fun resolves_direct_device_and_media_controls() {
+        assertThat(VoiceCommandRouter.resolve("turn flashlight on"))
+            .isEqualTo(VoiceRoute("torch", mapOf("state" to "on")))
+        assertThat(VoiceCommandRouter.resolve("pause music"))
+            .isEqualTo(VoiceRoute("media_control", mapOf("action" to "pause")))
+        assertThat(VoiceCommandRouter.resolve("next song"))
+            .isEqualTo(VoiceRoute("media_control", mapOf("action" to "next")))
+        assertThat(VoiceCommandRouter.resolve("set volume to 75 percent"))
+            .isEqualTo(VoiceRoute("set_volume", mapOf("stream" to "music", "level" to 75)))
+    }
+
+    @Test
     fun resolves_bounded_android_navigation() {
         assertThat(VoiceCommandRouter.resolve("go home"))
             .isEqualTo(VoiceRoute("device_navigation", mapOf("action" to "home")))
