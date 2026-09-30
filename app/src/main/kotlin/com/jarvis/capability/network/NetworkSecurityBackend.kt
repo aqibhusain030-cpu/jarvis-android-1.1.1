@@ -20,12 +20,16 @@ class NetworkSecurityBackend @Inject constructor(
     private val operator: OperatorAuthorization,
     private val web: WebSecurityAnalyzer,
     private val monitor: NetworkMonitor,
-    private val routes: RouteInspector
+    private val routes: RouteInspector,
+    private val udp: UdpProbe,
+    private val websocket: WebSocketProbe
 ) : CapabilityBackend {
     override val backendId = "friday.network"
     override val capabilities = setOf(
         Capability("network.dns_resolve", "Resolve DNS within an authorized security scope"),
         Capability("network.tcp_probe", "Check TCP connectivity within an authorized security scope", Capability.RiskLevel.MEDIUM),
+        Capability("network.udp_probe", "Send a bounded UDP probe within an authorized security scope", Capability.RiskLevel.MEDIUM),
+        Capability("network.websocket_probe", "Check secure WebSocket connectivity within an authorized security scope", Capability.RiskLevel.MEDIUM),
         Capability("network.port_scan", "Enumerate bounded TCP ports within an authorized security scope", Capability.RiskLevel.HIGH, timeoutMs = 45_000L),
         Capability("network.service_detect", "Identify services from authorized port observations", Capability.RiskLevel.MEDIUM),
         Capability("network.tls_inspect", "Inspect TLS metadata within an authorized security scope", Capability.RiskLevel.MEDIUM),
@@ -52,6 +56,23 @@ class NetworkSecurityBackend @Inject constructor(
                 if (!operator.consume()) return CapabilityResult.Rejected(r.requestId, CapabilityResult.RejectionCode.POLICY_DENIED, "Fresh operator authorization is required for active network probing.")
                 val open = tcp.probe(target, port)
                 CapabilityResult.Success(r.requestId, "TCP probe completed.", mapOf("host" to target, "port" to port.toString(), "open" to open.toString()))
+            }
+            "network.udp_probe" -> {
+                val port = r.arguments["port"]?.toIntOrNull()?.takeIf { it in 1..65535 } ?: return invalid(r)
+                checkScope(scopeId, target, "udp_probe", SecurityRisk.R2_ENUMERATION)?.let { return it }
+                if (!operator.consume()) return CapabilityResult.Rejected(r.requestId, CapabilityResult.RejectionCode.POLICY_DENIED, "Fresh operator authorization is required for active network probing.")
+                val sent = udp.sendProbe(target, port)
+                CapabilityResult.Success(r.requestId, "UDP probe packet was sent.", mapOf("host" to target, "port" to port.toString(), "sent" to sent.toString(), "note" to "UDP send is not proof of service reachability."))
+            }
+            "network.websocket_probe" -> {
+                val url = r.arguments["url"].orEmpty()
+                val uri = runCatching { java.net.URI(url) }.getOrNull() ?: return invalid(r)
+                val host = uri.host ?: return invalid(r)
+                if (!uri.scheme.equals("wss", true)) return CapabilityResult.Rejected(r.requestId, CapabilityResult.RejectionCode.INVALID_ARGUMENTS, "Only secure wss:// endpoints are supported.")
+                checkScope(scopeId, host, "websocket_probe", SecurityRisk.R2_ENUMERATION)?.let { return it }
+                if (!operator.consume()) return CapabilityResult.Rejected(r.requestId, CapabilityResult.RejectionCode.POLICY_DENIED, "Fresh operator authorization is required for active network probing.")
+                val result = websocket.probe(url)
+                CapabilityResult.Success(r.requestId, "WebSocket probe completed.", mapOf("connected" to result.connected.toString(), "code" to (result.code?.toString() ?: ""), "message" to (result.message ?: "")))
             }
             "network.port_scan" -> {
                 val ports = r.arguments["ports"].orEmpty().split(",").mapNotNull { it.trim().toIntOrNull() }
