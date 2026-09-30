@@ -36,6 +36,8 @@ class SecurityCapabilityTool @Inject constructor(
         "network.tls_inspect",
         "network.inventory",
         "network.target_profile",
+        "network.status",
+        "network.routes",
         "websec.analyze"
     )
 
