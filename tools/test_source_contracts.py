@@ -117,3 +117,12 @@ assert 'LESSONS FROM PREVIOUS EXECUTION' in read("app/src/main/python/brain.py")
 assert '_MAX_TOOL_ROUNDS = 8' in read("app/src/main/python/brain.py")
 assert 'target_total_parameters' in read("model/2t/config.json")
 assert 'exact parameter count' in read("model/2t/training/README.md")
+
+remote_engine = read("app/src/main/kotlin/com/jarvis/brain/RemoteLlmEngine.kt")
+credentials = read("app/src/main/kotlin/com/jarvis/brain/RemoteInferenceCredentialStore.kt")
+assert 'https://' in remote_engine
+assert 'chat/completions' in remote_engine
+assert 'Authorization' in remote_engine
+assert 'AndroidKeyStore' in credentials
+assert 'AES/GCM/NoPadding' in credentials
+assert 'Bearer ' in remote_engine
