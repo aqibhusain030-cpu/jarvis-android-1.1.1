@@ -21,6 +21,14 @@
     <uses-permission android:name="android.permission.INTERNET"/>
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE"/>
 
+    <!-- Android 11+ package visibility: expose only launchable apps needed for voice app discovery. -->
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.MAIN"/>
+            <category android:name="android.intent.category.LAUNCHER"/>
+        </intent>
+    </queries>
+
     <application
         android:name=".JarvisApplication"
         android:allowBackup="false"
