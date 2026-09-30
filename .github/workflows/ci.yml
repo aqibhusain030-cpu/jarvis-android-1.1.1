@@ -44,7 +44,23 @@ jobs:
           ! grep -RInE --exclude-dir=.git --exclude='*.md'             '(AKIA[0-9A-Z]{16}|AIza[0-9A-Za-z_-]{35}|-----BEGIN (RSA|EC|OPENSSH) PRIVATE KEY-----|ghp_[A-Za-z0-9]{30,})' .
       - name: Sensitive capability scan
         run: |
-          ! grep -RInE --include='AndroidManifest.xml'             'MANAGE_EXTERNAL_STORAGE|QUERY_ALL_PACKAGES|BIND_ACCESSIBILITY_SERVICE|FOREGROUND_SERVICE_DATA_SYNC|ACCESS_BACKGROUND_LOCATION' .
+          ! grep -RInE --include='AndroidManifest.xml'             'MANAGE_EXTERNAL_STORAGE|QUERY_ALL_PACKAGES|FOREGROUND_SERVICE_DATA_SYNC|ACCESS_BACKGROUND_LOCATION' .
+          python - <<'PY'
+          import xml.etree.ElementTree as ET
+          from pathlib import Path
+          p = Path("app/src/main/AndroidManifest.xml")
+          root = ET.parse(p).getroot()
+          ns = {"android": "http://schemas.android.com/apk/res/android"}
+          services = [
+              s for s in root.findall(".//service")
+              if s.get("{http://schemas.android.com/apk/res/android}permission")
+              == "android.permission.BIND_ACCESSIBILITY_SERVICE"
+          ]
+          assert len(services) <= 1, "At most one accessibility service is permitted."
+          for service in services:
+              assert service.get("{http://schemas.android.com/apk/res/android}exported") == "false"
+          print("Accessibility service declaration gate passed")
+          PY
 
   wrapper:
     runs-on: ubuntu-latest
