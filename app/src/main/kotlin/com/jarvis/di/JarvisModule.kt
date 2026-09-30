@@ -30,19 +30,37 @@ object JarvisModule {
     @Provides @Singleton
     fun capabilityRegistry(
         context: Context
-    ): CapabilityRegistry = CapabilityRegistry().apply {
-        // Backends are registered deterministically; the registry is the
-        // capability catalog, while ToolDispatcher remains the authoritative
-        // authorization path for legacy tools.
+    ): CapabilityRegistry {
+        // The registry is synchronous at construction time; registration itself
+        // is suspendable, so bootstrap it through a dedicated coroutine scope.
+        // Backends are installed by CapabilityBootstrap below.
+        return CapabilityRegistry()
     }
 
     @Provides @Singleton
-    fun capabilityExecutor(
-        registry: CapabilityRegistry
-    ): CapabilityExecutor = CapabilityExecutor(
-        registry = registry,
-        policyProvider = CapabilityPolicy(DefaultCapabilityPolicy())
+    fun capabilityBackends(
+        context: Context
+    ): List<com.jarvis.core.capability.CapabilityBackend> = listOf(
+        AndroidIntentBackend(context),
+        PackageBackend(context),
+        AccessibilityBackend(JarvisAccessibilityService.controller())
     )
+
+    @Provides @Singleton
+    fun capabilityExecutor(
+        registry: CapabilityRegistry,
+        backends: List<com.jarvis.core.capability.CapabilityBackend>
+    ): CapabilityExecutor {
+        kotlinx.coroutines.runBlocking {
+            backends.forEachIndexed { index, backend ->
+                registry.register(backend, priority = 100 - index)
+            }
+        }
+        return CapabilityExecutor(
+            registry = registry,
+            policyProvider = CapabilityPolicy(DefaultCapabilityPolicy())
+        )
+    }
 
     @Provides @Singleton
     fun registry(
