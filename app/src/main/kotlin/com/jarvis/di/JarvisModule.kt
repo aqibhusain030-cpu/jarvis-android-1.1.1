@@ -7,6 +7,7 @@ import com.jarvis.capability.android.AndroidIntentBackend
 import com.jarvis.capability.android.PackageBackend
 import com.jarvis.capability.security.SecurityLabBackend
 import com.jarvis.capability.network.NetworkSecurityBackend
+import com.jarvis.capability.security.SecurityAssessmentBackend
 import com.jarvis.network.DnsResolver
 import com.jarvis.network.PortScanner
 import com.jarvis.network.TcpProbe
@@ -76,6 +77,7 @@ object JarvisModule {
         monitor: ConsentMonitor,
         operator: OperatorAuthorization,
         networkBackend: NetworkSecurityBackend,
+        securityAssessmentBackend: SecurityAssessmentBackend,
         toolRegistry: ToolRegistry,
         toolDispatcher: com.jarvis.tools.ToolDispatcher
     ): List<com.jarvis.core.capability.CapabilityBackend> = listOf(
@@ -83,6 +85,7 @@ object JarvisModule {
         PackageBackend(context),
         SecurityLabBackend(scopes, assessment, simulator, monitor, operator),
         networkBackend,
+        securityAssessmentBackend,
         AccessibilityBackend(JarvisAccessibilityService.controller()),
         com.jarvis.core.capability.ToolCapabilityBackend(toolRegistry, toolDispatcher)
     )
