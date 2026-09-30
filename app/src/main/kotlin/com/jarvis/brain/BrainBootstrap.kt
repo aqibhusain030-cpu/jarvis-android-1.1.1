@@ -22,7 +22,7 @@ import javax.inject.Singleton
 @Singleton
 class BrainBootstrap @Inject constructor(
     private val python: PythonRuntime,
-    private val llm: LocalLlmEngine,
+    private val llm: HybridLlmEngine,
     private val toolBridge: ToolBridgeKotlin,
     private val registry: ToolRegistry,
     private val models: ModelManager,
@@ -47,7 +47,7 @@ class BrainBootstrap @Inject constructor(
             publishToolCatalog()
 
             // Load LLM if model file is present and verified.
-            llmReady = llm.loadIfNeeded()
+            llmReady = llm.loadLocal()
             if (llmReady) {
                 python.call("set_llm", llm)
                 logger.i(TAG, "LLM wired into Python brain")
@@ -87,7 +87,7 @@ class BrainBootstrap @Inject constructor(
         for (e in models.all()) {
             out[e.id] = models.isPresent(e)
         }
-        out["llm_engine"] = llm.ready
+        out["llm_engine"] = llm.localReady
         return out
     }
 
