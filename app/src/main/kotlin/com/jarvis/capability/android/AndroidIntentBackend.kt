@@ -10,7 +10,7 @@ import com.jarvis.core.capability.*
 class AndroidIntentBackend(private val context: Context) : CapabilityBackend {
     override val backendId = "android.intent"
     override val capabilities = setOf(
-        Capability("android.open_url", "Open a web URL"),
+        Capability("android.open_url", "Open a web URL", Capability.RiskLevel.HIGH),
         Capability("android.dial", "Open the phone dialer", Capability.RiskLevel.MEDIUM),
         Capability("android.compose_sms", "Open the SMS composer", Capability.RiskLevel.MEDIUM),
         Capability("android.open_maps", "Open a location in maps"),
