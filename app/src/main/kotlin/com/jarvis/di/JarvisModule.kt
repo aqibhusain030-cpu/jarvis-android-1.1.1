@@ -9,6 +9,11 @@ import com.jarvis.core.capability.CapabilityExecutor
 import com.jarvis.core.capability.CapabilityPolicy
 import com.jarvis.core.capability.DefaultCapabilityPolicy
 import com.jarvis.core.capability.CapabilityRegistry
+import com.jarvis.friday.FridayPrime
+import com.jarvis.friday.action.FridayCapabilityGateway
+import com.jarvis.friday.audit.FridayAuditSink
+import com.jarvis.friday.audit.InMemoryFridayAudit
+import com.jarvis.friday.core.FridayExecutive
 import com.jarvis.tools.ToolRegistry
 import com.jarvis.tools.impl.*
 import dagger.Module
@@ -54,6 +59,19 @@ object JarvisModule {
             policyProvider = CapabilityPolicy(DefaultCapabilityPolicy())
         )
     }
+
+    @Provides @Singleton
+    fun fridayAudit(): FridayAuditSink = InMemoryFridayAudit()
+
+    @Provides @Singleton
+    fun fridayPrime(
+        capabilityExecutor: CapabilityExecutor,
+        audit: FridayAuditSink
+    ): FridayPrime = FridayPrime(
+        executive = FridayExecutive(),
+        actionGateway = FridayCapabilityGateway(capabilityExecutor),
+        audit = audit
+    )
 
     @Provides @Singleton
     fun registry(
