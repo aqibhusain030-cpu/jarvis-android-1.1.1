@@ -11,6 +11,8 @@ import com.jarvis.friday.security.ExploitSimulator
 import com.jarvis.friday.security.InMemoryConsentMonitor
 import com.jarvis.friday.security.SecurityAssessmentEngine
 import com.jarvis.friday.security.SecurityScopeRegistry
+import com.jarvis.friday.security.FridayOperatorAuthorization
+import com.jarvis.core.capability.OperatorAuthorization
 import com.jarvis.core.capability.CapabilityExecutor
 import com.jarvis.core.capability.CapabilityPolicy
 import com.jarvis.core.capability.DefaultCapabilityPolicy
@@ -42,6 +44,9 @@ object JarvisModule {
     fun capabilityRegistry(): CapabilityRegistry = CapabilityRegistry()
 
     @Provides @Singleton
+    fun operatorAuthorization(unlock: com.jarvis.security.SecurityUnlockManager): OperatorAuthorization = FridayOperatorAuthorization(unlock)
+
+    @Provides @Singleton
     fun securityScopes(): SecurityScopeRegistry = SecurityScopeRegistry()
 
     @Provides @Singleton
@@ -59,11 +64,12 @@ object JarvisModule {
         scopes: SecurityScopeRegistry,
         assessment: SecurityAssessmentEngine,
         simulator: ExploitSimulator,
-        monitor: ConsentMonitor
+        monitor: ConsentMonitor,
+        operator: OperatorAuthorization
     ): List<com.jarvis.core.capability.CapabilityBackend> = listOf(
         AndroidIntentBackend(context),
         PackageBackend(context),
-        SecurityLabBackend(scopes, assessment, simulator, monitor),
+        SecurityLabBackend(scopes, assessment, simulator, monitor, operator),
         AccessibilityBackend(JarvisAccessibilityService.controller())
     )
 
