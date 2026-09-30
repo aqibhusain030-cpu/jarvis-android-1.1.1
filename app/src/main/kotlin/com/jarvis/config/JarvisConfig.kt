@@ -28,5 +28,9 @@ data class JarvisConfig(
     val shellEnabled: Boolean = false,
     val pinRequiredForHighRisk: Boolean = true,
     val cloudFallbackEnabled: Boolean = false,
+    val remoteInferenceEnabled: Boolean = false,
+    val remoteInferenceBaseUrl: String = "",
+    val remoteInferenceModel: String = "JARVIS-2T-MoE",
+    val remoteInferenceTimeoutMs: Int = 60_000,
     val killPhraseEnabled: Boolean = true
 )
