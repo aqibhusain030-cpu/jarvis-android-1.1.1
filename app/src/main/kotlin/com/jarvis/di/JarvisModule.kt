@@ -86,7 +86,7 @@ object JarvisModule {
         }
         return CapabilityExecutor(
             registry = registry,
-            policyProvider = CapabilityPolicy(DefaultCapabilityPolicy())
+            policyProvider = DefaultCapabilityPolicy()
         )
     }
 
