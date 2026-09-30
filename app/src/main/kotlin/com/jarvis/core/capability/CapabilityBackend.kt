@@ -15,5 +15,5 @@ interface CapabilityBackend {
 abstract class IoCapabilityBackend(
     private val dispatcher: CoroutineDispatcher = Dispatchers.IO
 ) : CapabilityBackend {
-    protected suspend fun <T> io(block: () -> T): T = withContext(dispatcher, block)
+    protected suspend fun <T> io(block: () -> T): T = withContext(dispatcher) { block() }
 }
