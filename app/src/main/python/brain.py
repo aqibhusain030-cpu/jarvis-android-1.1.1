@@ -127,6 +127,7 @@ def respond(payload_json: str) -> str:
     text = payload.get("userText", "")
     lang = payload.get("detectedLanguage") or detect_language(text)
     history = payload.get("recentMessages", [])[-8:]
+    lessons = payload.get("lessons", [])[-8:]
 
     _mem.remember_message("user", text, lang)
 
@@ -137,6 +138,7 @@ def respond(payload_json: str) -> str:
     base = (
         f"{system}\n\n# CONTEXT\n{context}\n\n"
         f"{tools}\n\n"
+        f"# LESSONS FROM PREVIOUS EXECUTION\n" + "\n".join(lessons) + "\n\n"
         f"# HISTORY\n" + "\n".join(history) + "\n\n"
         f"# USER\n{text}\n\n# ASSISTANT\n"
     )
