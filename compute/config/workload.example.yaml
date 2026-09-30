@@ -1,0 +1,39 @@
+version: 1
+name: jarvis-moe-smoke
+mode: training
+
+model:
+  architecture: sparse_moe
+  parameter_target: 1000000000
+  precision: bf16
+  max_sequence_length: 4096
+
+distributed:
+  backend: nccl
+  nodes: 1
+  gpus_per_node: 1
+  tensor_parallel: 1
+  pipeline_parallel: 1
+  expert_parallel: 1
+  data_parallel: 1
+
+storage:
+  provider: gcs
+  bucket_env: JARVIS_GCS_BUCKET
+  prefix_env: JARVIS_GCS_PREFIX
+  checkpoint_interval_steps: 250
+
+dataset:
+  manifest: gs://REPLACE_WITH_BUCKET/datasets/manifest.jsonl
+
+evaluation:
+  suites:
+    - loss
+    - perplexity
+    - tool_schema
+    - capability_policy
+
+security:
+  credentials_from_environment: true
+  allow_public_endpoints: false
+  require_immutable_artifacts: true
