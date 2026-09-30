@@ -80,7 +80,14 @@ class VoiceCommandRouter @Inject constructor(
                     return VoiceRoute("screenshot")
             }
 
-            TOOL_COMMANDS.firstNotNullOfOrNull { matchCommand(it.first, text) }?.let { return it }
+            VOLUME_COMMAND.matchEntire(text)?.let { match ->
+                return VoiceRoute(
+                    "set_volume",
+                    mapOf("stream" to "music", "level" to match.groupValues[1].toInt().coerceIn(0, 100))
+                )
+            }
+            TOOL_COMMANDS.firstNotNullOfOrNull { it.first.matchEntire(text)?.let { _ -> VoiceRoute(it.second.first, it.second.second) } }
+                ?.let { return it }
 
             val app = APP_ENGLISH.matchEntire(text)
                 ?: APP_HINGLISH.matchEntire(text)
@@ -93,14 +100,6 @@ class VoiceCommandRouter @Inject constructor(
             }
 
             return null
-        }
-
-        private fun matchCommand(regex: Regex, text: String): VoiceRoute? {
-            val match = regex.matchEntire(text) ?: return null
-            return when (regex) {
-                TOOL_COMMANDS.last().first -> VoiceRoute("set_volume", mapOf("stream" to "music", "level" to match.groupValues[1].toInt().coerceIn(0, 100)))
-                else -> TOOL_COMMANDS.firstOrNull { it.first == regex }?.second?.let { VoiceRoute(it.first, it.second) }
-            }
         }
 
         private fun newsRoute(text: String): VoiceRoute? {
@@ -132,6 +131,8 @@ class VoiceCommandRouter @Inject constructor(
 
         private fun normalize(value: String): String =
             value.trim().lowercase(Locale.ROOT).replace(Regex("\\s+"), " ")
+
+        private val VOLUME_COMMAND = Regex("^set (?:music )?volume to (\\d{1,3}) percent$")
 
         private val TOOL_COMMANDS: List<Pair<Regex, Pair<String, Map<String, Any?>>>> = listOf(
             Regex("^(?:turn|switch) (?:the )?flashlight (?:on|enable)$") to ("torch" to mapOf("state" to "on")),
