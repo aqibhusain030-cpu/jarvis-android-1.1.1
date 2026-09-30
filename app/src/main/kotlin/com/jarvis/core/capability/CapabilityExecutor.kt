@@ -17,7 +17,7 @@ class CapabilityExecutor(
         if (policyProvider.requiresConfirmation(capability) && !request.confirmationGranted)
             return CapabilityResult.Rejected(request.requestId, CapabilityResult.RejectionCode.CONFIRMATION_REQUIRED, "Explicit confirmation is required.")
         return try {
-            withTimeout(15_000L) { backend.execute(request) }
+            withTimeout(capability.timeoutMs.coerceIn(1_000L, 120_000L)) { backend.execute(request) }
         } catch (e: CancellationException) {
             throw e
         } catch (e: SecurityException) {
