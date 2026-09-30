@@ -30,6 +30,9 @@ data class TargetProfile(
 )
 
 sealed interface NetworkEvent {
+    data class NetworkConnected(override val scopeId: String, val transport: String, override val timestamp: Instant = Instant.now()) : NetworkEvent
+    data class NetworkDisconnected(override val scopeId: String, override val timestamp: Instant = Instant.now()) : NetworkEvent
+    data class RouteChanged(override val scopeId: String, val interfaceName: String?, override val timestamp: Instant = Instant.now()) : NetworkEvent
     val timestamp: Instant
     val scopeId: String
     data class HostDiscovered(override val scopeId: String, val host: String, override val timestamp: Instant = Instant.now()) : NetworkEvent
