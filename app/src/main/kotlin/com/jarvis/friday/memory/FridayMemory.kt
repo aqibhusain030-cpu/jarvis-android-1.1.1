@@ -20,10 +20,17 @@ data class MemoryEvent(
 
 class InMemoryFridayMemory : FridayMemory {
     private val events = ArrayDeque<MemoryEvent>()
-    @Synchronized override suspend fun remember(event: MemoryEvent) {
-        events.addLast(event)
-        while (events.size > 5000) events.removeFirst()
+    override suspend fun remember(event: MemoryEvent) {
+        synchronized(this) {
+            events.addLast(event)
+            while (events.size > 5000) events.removeFirst()
+        }
     }
-    @Synchronized override suspend fun recall(query: String, limit: Int): List<MemoryEvent> =
-        events.asSequence().filter { it.summary.contains(query, true) }.takeLast(limit.coerceIn(1, 5000)).toList()
+    override suspend fun recall(query: String, limit: Int): List<MemoryEvent> =
+        synchronized(this) {
+            events.asSequence()
+                .filter { it.summary.contains(query, true) }
+                .takeLast(limit.coerceIn(1, 5000))
+                .toList()
+        }
 }
