@@ -80,6 +80,8 @@ class VoiceCommandRouter @Inject constructor(
                     return VoiceRoute("screenshot")
             }
 
+            TOOL_COMMANDS.firstNotNullOfOrNull { matchCommand(it.first, text) }?.let { return it }
+
             val app = APP_ENGLISH.matchEntire(text)
                 ?: APP_HINGLISH.matchEntire(text)
                 ?: APP_HINDI.matchEntire(text)
@@ -91,6 +93,14 @@ class VoiceCommandRouter @Inject constructor(
             }
 
             return null
+        }
+
+        private fun matchCommand(regex: Regex, text: String): VoiceRoute? {
+            val match = regex.matchEntire(text) ?: return null
+            return when (regex) {
+                TOOL_COMMANDS.last().first -> VoiceRoute("set_volume", mapOf("stream" to "music", "level" to match.groupValues[1].toInt().coerceIn(0, 100)))
+                else -> TOOL_COMMANDS.firstOrNull { it.first == regex }?.second?.let { VoiceRoute(it.first, it.second) }
+            }
         }
 
         private fun newsRoute(text: String): VoiceRoute? {
@@ -122,6 +132,18 @@ class VoiceCommandRouter @Inject constructor(
 
         private fun normalize(value: String): String =
             value.trim().lowercase(Locale.ROOT).replace(Regex("\\s+"), " ")
+
+        private val TOOL_COMMANDS: List<Pair<Regex, Pair<String, Map<String, Any?>>>> = listOf(
+            Regex("^(?:turn|switch) (?:the )?flashlight (?:on|enable)$") to ("torch" to mapOf("state" to "on")),
+            Regex("^(?:turn|switch) (?:the )?flashlight (?:off|disable)$") to ("torch" to mapOf("state" to "off")),
+            Regex("^flashlight on$|^torch on$") to ("torch" to mapOf("state" to "on")),
+            Regex("^flashlight off$|^torch off$") to ("torch" to mapOf("state" to "off")),
+            Regex("^(?:play|resume) (?:music|media)$") to ("media_control" to mapOf("action" to "play")),
+            Regex("^pause (?:music|media)$") to ("media_control" to mapOf("action" to "pause")),
+            Regex("^(?:next|skip) (?:song|track)$") to ("media_control" to mapOf("action" to "next")),
+            Regex("^(?:previous|prev|back) (?:song|track)$") to ("media_control" to mapOf("action" to "prev")),
+            Regex("^set (?:music )?volume to (\\d{1,3}) percent$") to ("set_volume" to emptyMap()),
+        )
 
         private val HEADLINE_ONLY = Regex(
             "^(?:(?:give|show|tell) me )?(?:the )?(?:latest |today(?:'s )?|breaking )?(?:news|headlines|khabar|khabrein|खबर|खबरें|समाचार)$"
