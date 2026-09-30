@@ -1,5 +1,14 @@
 package com.jarvis.di
 
+import android.content.Context
+import com.jarvis.capability.accessibility.AccessibilityBackend
+import com.jarvis.capability.accessibility.JarvisAccessibilityService
+import com.jarvis.capability.android.AndroidIntentBackend
+import com.jarvis.capability.android.PackageBackend
+import com.jarvis.core.capability.CapabilityExecutor
+import com.jarvis.core.capability.CapabilityPolicy
+import com.jarvis.core.capability.DefaultCapabilityPolicy
+import com.jarvis.core.capability.CapabilityRegistry
 import com.jarvis.tools.ToolRegistry
 import com.jarvis.tools.impl.*
 import dagger.Module
@@ -17,6 +26,23 @@ object JarvisModule {
 
     @Provides @Singleton
     fun scope(): CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+
+    @Provides @Singleton
+    fun capabilityRegistry(
+        context: Context
+    ): CapabilityRegistry = CapabilityRegistry().apply {
+        // Backends are registered deterministically; the registry is the
+        // capability catalog, while ToolDispatcher remains the authoritative
+        // authorization path for legacy tools.
+    }
+
+    @Provides @Singleton
+    fun capabilityExecutor(
+        registry: CapabilityRegistry
+    ): CapabilityExecutor = CapabilityExecutor(
+        registry = registry,
+        policyProvider = CapabilityPolicy(DefaultCapabilityPolicy())
+    )
 
     @Provides @Singleton
     fun registry(
