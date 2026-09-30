@@ -25,6 +25,8 @@ class NetworkMonitor @Inject constructor(
     @Volatile private var state = NetworkState(false, null, false, true, null, emptyList())
     private var callback: ConnectivityManager.NetworkCallback? = null
 
+    init { start() }
+
     fun current(): NetworkState = state
 
     @Synchronized
