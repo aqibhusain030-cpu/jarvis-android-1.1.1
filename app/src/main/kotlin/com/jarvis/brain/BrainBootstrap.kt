@@ -6,6 +6,7 @@ import com.jarvis.models.ModelManager
 import com.jarvis.tools.ToolRegistry
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
@@ -72,6 +73,9 @@ class BrainBootstrap @Inject constructor(
                         put("description_en", tool.spec.descriptionEn)
                         put("description_hi", tool.spec.descriptionHi)
                         put("confirmation", tool.spec.confirmation.name)
+                        put("parameters", Json.encodeToJsonElement(tool.spec.parameters))
+                        put("permissions", Json.encodeToJsonElement(tool.spec.permissions))
+                        put("timeout_ms", tool.spec.timeoutMs)
                     }
                 )
             }
