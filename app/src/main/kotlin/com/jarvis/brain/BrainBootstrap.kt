@@ -48,7 +48,7 @@ class BrainBootstrap @Inject constructor(
             publishToolCatalog()
 
             // Load LLM if model file is present and verified.
-            llmReady = llm.loadLocal()
+            llmReady = if (config.current.value.remoteInferenceEnabled) true else llm.loadLocal()
             if (llmReady) {
                 python.call("set_llm", llm)
                 logger.i(TAG, "LLM wired into Python brain")
