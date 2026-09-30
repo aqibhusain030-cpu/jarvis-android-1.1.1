@@ -10,7 +10,7 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class NetworkSecurityBackend @Inject constructor(
+class NetworkSecurityBackend(
     private val scopes: SecurityScopeRegistry,
     private val engine: NetworkEngine,
     private val tls: TlsInspector,
@@ -78,6 +78,7 @@ class NetworkSecurityBackend @Inject constructor(
                 val ports = r.arguments["ports"].orEmpty().split(",").mapNotNull { it.trim().toIntOrNull() }
                 if (ports.isEmpty()) return invalid(r)
                 checkScope(scopeId, target, "port_scan", SecurityRisk.R2_ENUMERATION)?.let { return it }
+                if (!operator.consume()) return CapabilityResult.Rejected(r.requestId, CapabilityResult.RejectionCode.POLICY_DENIED, "Fresh operator authorization is required for active network probing.")
                 val result = engine.scan(scopeId, target, ports)
                 CapabilityResult.Success(r.requestId, "Port scan completed.", mapOf(
                     "host" to target,
@@ -131,6 +132,7 @@ class NetworkSecurityBackend @Inject constructor(
             }
             "websec.analyze" -> {
                 if (!scopes.isAuthorized(scopeId, target, "websec_analyze", SecurityRisk.R3_VALIDATION)) return denied(r)
+                if (!operator.consume()) return CapabilityResult.Rejected(r.requestId, CapabilityResult.RejectionCode.POLICY_DENIED, "Fresh operator authorization is required for active web security analysis.")
                 val assessment = web.analyze(scopeId, target)
                 CapabilityResult.Success(r.requestId, "Web security analysis completed.", mapOf(
                     "status" to assessment.statusCode.toString(),
