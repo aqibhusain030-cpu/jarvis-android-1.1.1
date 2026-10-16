@@ -23,10 +23,10 @@ import com.jarvis.friday.security.ExploitSimulator
 import com.jarvis.friday.security.InMemoryConsentMonitor
 import com.jarvis.friday.security.SecurityAssessmentEngine
 import com.jarvis.friday.security.SecurityScopeRegistry
+import com.jarvis.friday.security.SecurityScopeProofSigner
 import com.jarvis.friday.security.FridayOperatorAuthorization
 import com.jarvis.core.capability.OperatorAuthorization
 import com.jarvis.core.capability.CapabilityExecutor
-import com.jarvis.core.capability.CapabilityPolicy
 import com.jarvis.core.capability.DefaultCapabilityPolicy
 import com.jarvis.core.capability.CapabilityRegistry
 import com.jarvis.friday.FridayPrime
@@ -39,6 +39,7 @@ import com.jarvis.tools.impl.*
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
+import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -59,7 +60,7 @@ object JarvisModule {
     fun operatorAuthorization(unlock: com.jarvis.security.SecurityUnlockManager): OperatorAuthorization = FridayOperatorAuthorization(unlock)
 
     @Provides @Singleton
-    fun securityScopes(): SecurityScopeRegistry = SecurityScopeRegistry()
+    fun securityScopes(signer: SecurityScopeProofSigner): SecurityScopeRegistry = SecurityScopeRegistry(signer)
 
     @Provides @Singleton
     fun securityAssessment(): SecurityAssessmentEngine = SecurityAssessmentEngine()
@@ -72,7 +73,7 @@ object JarvisModule {
 
     @Provides @Singleton
     fun capabilityBackends(
-        context: Context,
+        @ApplicationContext context: Context,
         scopes: SecurityScopeRegistry,
         assessment: SecurityAssessmentEngine,
         simulator: ExploitSimulator,
@@ -106,20 +107,34 @@ object JarvisModule {
         )
     }
 
-
     @Provides @Singleton
     fun networkSecurityBackend(
         scopes: SecurityScopeRegistry,
         events: com.jarvis.network.NetworkEventBus,
         inventory: com.jarvis.network.NetworkInventory,
-        operator: OperatorAuthorization
+        operator: OperatorAuthorization,
+        monitor: NetworkMonitor,
+        routes: RouteInspector
     ): NetworkSecurityBackend {
         val dns = DnsResolver()
         val tcp = TcpProbe()
         val scanner = PortScanner(tcp, scopes)
         val fingerprint = ServiceFingerprinter()
         val engine = com.jarvis.network.NetworkEngine(dns, scanner, fingerprint, scopes, inventory, events)
-        return NetworkSecurityBackend(scopes, engine, TlsInspector(), inventory, tcp, fingerprint, operator, WebSecurityAnalyzer(scopes), NetworkMonitor(context), RouteInspector(context), UdpProbe(), WebSocketProbe())
+        return NetworkSecurityBackend(
+            scopes,
+            engine,
+            TlsInspector(),
+            inventory,
+            tcp,
+            fingerprint,
+            operator,
+            WebSecurityAnalyzer(scopes),
+            monitor,
+            routes,
+            UdpProbe(),
+            WebSocketProbe()
+        )
     }
 
     @Provides @Singleton

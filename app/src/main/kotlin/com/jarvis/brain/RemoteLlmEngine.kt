@@ -95,7 +95,7 @@ class RemoteLlmEngine @Inject constructor(
                     .orEmpty()
             }
         }.onFailure {
-            logger.w(TAG, "Remote inference request failed", it)
+            logger.w(TAG, "Remote inference request failed: " + (it.message ?: it.javaClass.simpleName))
         }.getOrDefault("")
     }
 

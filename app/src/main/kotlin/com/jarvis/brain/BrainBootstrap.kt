@@ -9,6 +9,7 @@ import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.encodeToJsonElement
 import kotlinx.serialization.json.put
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -88,8 +89,8 @@ class BrainBootstrap @Inject constructor(
     /** Best-effort model presence report for UI/onboarding. */
     fun modelStatus(): Map<String, Boolean> {
         val out = mutableMapOf<String, Boolean>()
-        for (e in models.all()) {
-            out[e.id] = models.isPresent(e)
+        for (asset in models.assets()) {
+            out[asset.id] = models.isPresent(asset)
         }
         out["llm_engine"] = llm.localReady
         return out

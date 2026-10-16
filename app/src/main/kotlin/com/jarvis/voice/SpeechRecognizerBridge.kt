@@ -32,7 +32,10 @@ class SpeechRecognizerBridge @Inject constructor(
     }
 
     fun transcribe(pcm: ByteArray): String {
-        if (!ensureReady()) return ""
+        if (!ensureReady()) {
+            logger.w(TAG, "Local STT unavailable; transcript dropped")
+            return ""
+        }
         val lang = when (config.current.value.sttLanguage) {
             "auto", "" -> "auto"
             else -> config.current.value.sttLanguage
