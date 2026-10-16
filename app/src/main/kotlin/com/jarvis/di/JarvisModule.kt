@@ -96,7 +96,7 @@ object JarvisModule {
     @Provides @Singleton
     fun capabilityExecutor(
         registry: CapabilityRegistry,
-        backends: List<com.jarvis.core.capability.CapabilityBackend>
+        backends: List<@kotlin.jvm.JvmSuppressWildcards com.jarvis.core.capability.CapabilityBackend>
     ): CapabilityExecutor {
         backends.forEachIndexed { index, backend ->
             registry.register(backend, priority = 100 - index)

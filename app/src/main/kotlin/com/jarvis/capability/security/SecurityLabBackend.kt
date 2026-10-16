@@ -67,12 +67,16 @@ class SecurityLabBackend(
     }
 
     private fun assess(r: CapabilityRequest): CapabilityResult {
-        val scopeId = r.arguments["scope_id"]?.trim().orEmpty()
         val target = r.arguments["target"]?.trim().takeUnless { it.isNullOrBlank() } ?: "local-app"
-        if (scopeId.isBlank() ||
-            !scopes.isAuthorized(scopeId, target, "security.assess.app", SecurityRisk.R1_PASSIVE)
-        ) {
-            return denied(r)
+        // Manifest assessment of the installed app is local-only. Remote targets
+        // must have a live, proof-verified scope granting this specific capability.
+        if (target != "local-app") {
+            val scopeId = r.arguments["scope_id"]?.trim().orEmpty()
+            if (scopeId.isBlank() ||
+                !scopes.isAuthorized(scopeId, target, "security.assess.app", SecurityRisk.R1_PASSIVE)
+            ) {
+                return denied(r)
+            }
         }
         val result = assessment.assessManifest(
             target,

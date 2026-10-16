@@ -11,12 +11,14 @@ import com.jarvis.tools.ToolSpec
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import java.util.UUID
 import javax.inject.Inject
+import javax.inject.Provider
 import javax.inject.Singleton
 
 @Singleton
 class SecurityCapabilityTool @Inject constructor(
-    private val executor: CapabilityExecutor
+    private val executorProvider: Provider<CapabilityExecutor>
 ) : Tool {
     private val allowed = setOf(
         "security.scope.enroll",
@@ -62,15 +64,19 @@ class SecurityCapabilityTool @Inject constructor(
         val raw = (args["arguments_json"] as? String).orEmpty().ifBlank { "{}" }
         val json = runCatching { Json.parseToJsonElement(raw) as? JsonObject }.getOrNull()
             ?: return ToolResult.Err("arguments_json must be a JSON object.", "bad_args")
-        val arguments = json.mapValues { (_, value) -> value.jsonPrimitive.content }
+        val arguments = runCatching {
+            json.mapValues { (_, value) -> value.jsonPrimitive.content }
+        }.getOrElse {
+            return ToolResult.Err("arguments_json values must be JSON primitives.", "bad_args")
+        }
         val request = CapabilityRequest(
             capabilityId = capability,
             arguments = arguments,
-            requestId = java.util.UUID.randomUUID().toString(),
+            requestId = UUID.randomUUID().toString(),
             source = CapabilityRequest.Source.ASSISTANT,
             confirmationGranted = true
         )
-        return when (val result = executor.execute(request)) {
+        return when (val result = executorProvider.get().execute(request)) {
             is CapabilityResult.Success -> ToolResult.Ok(result.data)
             is CapabilityResult.Rejected -> ToolResult.Err(result.message, result.code.name.lowercase())
             is CapabilityResult.Failed -> ToolResult.Err(result.message, result.code.name.lowercase())
