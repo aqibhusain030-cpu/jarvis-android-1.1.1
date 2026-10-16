@@ -1,9 +1,23 @@
-package com.jarvis.core.capability
+package com.jarvis
 
 import com.google.common.truth.Truth.assertThat
+import com.jarvis.core.capability.Capability
+import com.jarvis.core.capability.CapabilityBackend
+import com.jarvis.core.capability.CapabilityExecutor
+import com.jarvis.core.capability.CapabilityPolicy
+import com.jarvis.core.capability.CapabilityRegistry
+import com.jarvis.core.capability.CapabilityRequest
+import com.jarvis.core.capability.CapabilityResult
+import com.jarvis.core.capability.DefaultCapabilityPolicy
 import kotlinx.coroutines.test.runTest
 import org.junit.Test
 
+/**
+ * Regression coverage for the public capability-control-plane contracts.
+ *
+ * This test intentionally lives in package com.jarvis so its class name does
+ * not collide with the more focused capability tests in the subpackage.
+ */
 class CapabilityControlPlaneTest {
 
     private class FakeBackend(
@@ -11,6 +25,7 @@ class CapabilityControlPlaneTest {
         override val capabilities: Set<Capability>
     ) : CapabilityBackend {
         var executions = 0
+
         override suspend fun execute(request: CapabilityRequest): CapabilityResult {
             executions++
             return CapabilityResult.Success(request.requestId, "ok")
@@ -19,23 +34,29 @@ class CapabilityControlPlaneTest {
 
     @Test
     fun registry_prefers_higher_priority_backend() = runTest {
-        val low = FakeBackend("low", setOf(Capability("test.action", "test")))
-        val high = FakeBackend("high", setOf(Capability("test.action", "test")))
+        val capability = Capability("test.action", "test")
+        val low = FakeBackend("low", setOf(capability))
+        val high = FakeBackend("high", setOf(capability))
         val registry = CapabilityRegistry()
-        registry.register(low, 1)
-        registry.register(high, 10)
+        registry.register(low, priority = 1)
+        registry.register(high, priority = 10)
 
-        assertThat(registry.find("test.action")?.backendId).isEqualTo("high")
+        assertThat(registry.resolve("test.action")?.backendId).isEqualTo("high")
     }
 
     @Test
     fun executor_rejects_unknown_capability() = runTest {
         val executor = CapabilityExecutor(
-            CapabilityRegistry(),
-            CapabilityPolicy(DefaultCapabilityPolicy())
+            registry = CapabilityRegistry(),
+            policyProvider = DefaultCapabilityPolicy()
         )
 
-        val result = executor.execute(CapabilityRequest("missing"))
+        val result = executor.execute(
+            CapabilityRequest(
+                capabilityId = "missing",
+                requestId = "missing-request"
+            )
+        )
 
         assertThat(result).isInstanceOf(CapabilityResult.Rejected::class.java)
         assertThat((result as CapabilityResult.Rejected).code)
@@ -48,17 +69,22 @@ class CapabilityControlPlaneTest {
             "security",
             setOf(Capability("lock", "Lock device", Capability.RiskLevel.HIGH))
         )
-        val registry = CapabilityRegistry()
-        registry.register(backend)
-
+        val registry = CapabilityRegistry().apply { register(backend) }
         val executor = CapabilityExecutor(
-            registry,
-            CapabilityPolicy(DefaultCapabilityPolicy())
+            registry = registry,
+            policyProvider = DefaultCapabilityPolicy()
         )
 
-        val result = executor.execute(CapabilityRequest("lock"))
+        val result = executor.execute(
+            CapabilityRequest(
+                capabilityId = "lock",
+                requestId = "lock-unconfirmed"
+            )
+        )
 
         assertThat(result).isInstanceOf(CapabilityResult.Rejected::class.java)
+        assertThat((result as CapabilityResult.Rejected).code)
+            .isEqualTo(CapabilityResult.RejectionCode.CONFIRMATION_REQUIRED)
         assertThat(backend.executions).isEqualTo(0)
     }
 
@@ -68,17 +94,16 @@ class CapabilityControlPlaneTest {
             "security",
             setOf(Capability("lock", "Lock device", Capability.RiskLevel.HIGH))
         )
-        val registry = CapabilityRegistry()
-        registry.register(backend)
-
+        val registry = CapabilityRegistry().apply { register(backend) }
         val executor = CapabilityExecutor(
-            registry,
-            CapabilityPolicy(DefaultCapabilityPolicy())
+            registry = registry,
+            policyProvider = DefaultCapabilityPolicy()
         )
 
         val result = executor.execute(
             CapabilityRequest(
                 capabilityId = "lock",
+                requestId = "lock-confirmed",
                 confirmationGranted = true
             )
         )
