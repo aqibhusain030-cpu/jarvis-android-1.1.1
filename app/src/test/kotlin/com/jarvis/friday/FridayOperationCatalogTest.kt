@@ -2,6 +2,7 @@ package com.jarvis.friday
 
 import com.google.common.truth.Truth.assertThat
 import com.jarvis.friday.core.FridayOperationCatalog
+import com.jarvis.friday.core.FridayOperationSpec
 import org.junit.Test
 
 class FridayOperationCatalogTest {
@@ -20,10 +21,22 @@ class FridayOperationCatalogTest {
 
     @Test
     fun security_operations_are_explicitly_scoped() {
-        assertThat(
-            FridayOperationCatalog.operations
-                .filter { it.domain == com.jarvis.friday.core.FridayOperationSpec.Domain.SECURITY }
-                .all { it.existingTool?.startsWith("security.") == true }
-        ).isTrue()
+        val securityOperations = FridayOperationCatalog.operations.filter {
+            it.domain == FridayOperationSpec.Domain.SECURITY
+        }
+
+        assertThat(securityOperations).isNotEmpty()
+        for (operation in securityOperations) {
+            val tool = operation.existingTool
+            assertThat(tool).isNotNull()
+            // Web security analysis has its own capability namespace and checks
+            // SecurityScopeRegistry authorization in NetworkSecurityBackend.
+            if (operation.id == "websec.analyze") {
+                assertThat(tool).isEqualTo("websec.analyze")
+            } else {
+                assertThat(operation.id).startsWith("security.")
+                assertThat(tool).startsWith("security.")
+            }
+        }
     }
 }
