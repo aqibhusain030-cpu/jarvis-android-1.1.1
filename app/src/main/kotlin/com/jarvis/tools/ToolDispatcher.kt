@@ -179,6 +179,6 @@ class ToolDispatcher @Inject constructor(
     companion object {
         private const val TAG = "ToolDispatcher"
         private val SAFE_WHILE_KILLED = setOf("speak", "healthcheck", "audit_log_read")
-        private val NETWORK_TOOLS = setOf("http_get", "http_post", "get_weather", "open_url")
+        private val NETWORK_TOOLS = setOf("http_get", "http_post", "get_weather", "get_news", "open_url")
     }
 }

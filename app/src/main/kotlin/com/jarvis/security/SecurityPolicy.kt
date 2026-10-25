@@ -23,7 +23,7 @@ class SecurityPolicy @Inject constructor(private val config: ConfigRepository) {
         "send_sms", "make_call", "send_whatsapp", "send_email", "reply_notification"
     )
 
-    private val networkTools = setOf("http_get", "http_post", "get_weather", "open_url")
+    private val networkTools = setOf("http_get", "http_post", "get_weather", "get_news", "open_url")
 
     private val sensitiveReads = setOf(
         "clipboard_get", "list_notifications", "contact_lookup", "get_location", "calendar_read"
@@ -38,7 +38,8 @@ class SecurityPolicy @Inject constructor(private val config: ConfigRepository) {
         "api.open-meteo.com",
         "huggingface.co",
         "github.com",
-        "objects.githubusercontent.com"
+        "objects.githubusercontent.com",
+        "api.gdeltproject.org"
     )
 
     fun toolAllowed(name: String): Boolean = when (name) {
@@ -52,7 +53,7 @@ class SecurityPolicy @Inject constructor(private val config: ConfigRepository) {
         if (c.communicationRequireConfirmation && name in communication) return true
         if (c.httpPostRequiresConfirmation && name == "http_post") return true
         if (c.fileDeleteRequiresConfirmation && name.startsWith("file_")) return true
-        if (name in networkTools) return true
+        if (name in networkTools && name !in setOf("get_news", "get_weather")) return true
         if (name in sensitiveReads) return true
         if (name in consequentialWrites) return true
         return false
@@ -68,7 +69,7 @@ class SecurityPolicy @Inject constructor(private val config: ConfigRepository) {
      */
     fun networkAllowed(name: String, args: Map<String, Any?>): Boolean {
         if (name !in networkTools) return true
-        if (name == "get_weather") return true
+        if (name == "get_weather" || name == "get_news") return true
         val url = (args["url"] as? String)?.trim().orEmpty()
         if (url.isEmpty()) return false
 

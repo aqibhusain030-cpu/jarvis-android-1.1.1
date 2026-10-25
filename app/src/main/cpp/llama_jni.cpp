@@ -80,6 +80,10 @@ Java_com_jarvis_brain_LlamaJNI_nativeGenerate(
     std::string out;
     std::lock_guard<std::mutex> lk(h->mu);
 
+    // Each generate() call receives a complete prompt from BrainBridge.
+    // Do not leak KV/cache state from a previous independent request.
+    llama_memory_clear(llama_get_memory(h->ctx), true);
+
     int n_prompt = -llama_tokenize(
         h->vocab, promptStr.c_str(), static_cast<int>(promptStr.size()),
         nullptr, 0, true, false);

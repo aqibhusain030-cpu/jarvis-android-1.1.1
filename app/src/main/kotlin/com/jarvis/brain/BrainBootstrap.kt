@@ -6,6 +6,7 @@ import com.jarvis.models.ModelManager
 import com.jarvis.tools.ToolRegistry
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
@@ -22,7 +23,7 @@ import javax.inject.Singleton
 @Singleton
 class BrainBootstrap @Inject constructor(
     private val python: PythonRuntime,
-    private val llm: LocalLlmEngine,
+    private val llm: HybridLlmEngine,
     private val toolBridge: ToolBridgeKotlin,
     private val registry: ToolRegistry,
     private val models: ModelManager,
@@ -47,7 +48,7 @@ class BrainBootstrap @Inject constructor(
             publishToolCatalog()
 
             // Load LLM if model file is present and verified.
-            llmReady = llm.loadIfNeeded()
+            llmReady = if (config.current.value.remoteInferenceEnabled) true else llm.loadLocal()
             if (llmReady) {
                 python.call("set_llm", llm)
                 logger.i(TAG, "LLM wired into Python brain")
@@ -72,6 +73,9 @@ class BrainBootstrap @Inject constructor(
                         put("description_en", tool.spec.descriptionEn)
                         put("description_hi", tool.spec.descriptionHi)
                         put("confirmation", tool.spec.confirmation.name)
+                        put("parameters", Json.encodeToJsonElement(tool.spec.parameters))
+                        put("permissions", Json.encodeToJsonElement(tool.spec.permissions))
+                        put("timeout_ms", tool.spec.timeoutMs)
                     }
                 )
             }
@@ -87,7 +91,7 @@ class BrainBootstrap @Inject constructor(
         for (e in models.all()) {
             out[e.id] = models.isPresent(e)
         }
-        out["llm_engine"] = llm.ready
+        out["llm_engine"] = llm.localReady
         return out
     }
 

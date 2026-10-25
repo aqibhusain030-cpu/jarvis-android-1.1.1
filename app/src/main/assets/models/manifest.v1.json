@@ -1,0 +1,68 @@
+{
+  "schemaVersion": 1,
+  "manifestId": "jarvis-edge-assets-2026-10-01",
+  "assets": [
+    {
+      "id": "qwen2.5-3b-instruct-q4_k_m",
+      "kind": "llm",
+      "provider": "huggingface",
+      "modelId": "Qwen/Qwen2.5-3B-Instruct-GGUF",
+      "revision": "cc1e68eea5f05f88f41a6de1fc73110178f23715",
+      "format": "gguf",
+      "filename": "qwen2.5-3b-instruct-q4_k_m.gguf",
+      "sizeBytes": 2104932768,
+      "sha256": "626b4a6678b86442240e33df819e00132d3ba7dddfe1cdc4fbb18e0a9615c62d",
+      "license": "qwen-research",
+      "licenseUrl": "https://huggingface.co/Qwen/Qwen2.5-3B-Instruct-GGUF/blob/cc1e68eea5f05f88f41a6de1fc73110178f23715/LICENSE",
+      "downloadUrl": "https://huggingface.co/Qwen/Qwen2.5-3B-Instruct-GGUF/resolve/cc1e68eea5f05f88f41a6de1fc73110178f23715/qwen2.5-3b-instruct-q4_k_m.gguf",
+      "sourceUrl": "https://huggingface.co/Qwen/Qwen2.5-3B-Instruct-GGUF/tree/cc1e68eea5f05f88f41a6de1fc73110178f23715",
+      "backend": "llama.cpp",
+      "precision": "mixed-q4",
+      "quantization": "Q4_K_M",
+      "capabilities": ["chat", "tools", "reasoning"],
+      "downloadableToAndroid": true,
+      "minHardware": {
+        "ramMb": 6144,
+        "freeStorageMb": 3500,
+        "abis": ["arm64-v8a"],
+        "accelerator": "CPU"
+      },
+      "verification": {
+        "method": "SHA-256",
+        "source": "Hugging Face immutable revision file metadata",
+        "verified": true
+      }
+    },
+    {
+      "id": "whisper-small",
+      "kind": "stt",
+      "provider": "huggingface",
+      "modelId": "ggerganov/whisper.cpp",
+      "revision": "c521a4b02f422512d734391fdf08bb08c0862f68",
+      "format": "ggml",
+      "filename": "ggml-small.bin",
+      "sizeBytes": 487601984,
+      "sha256": "1be3a9b2063867b937e64e2ec7483364a79917e157fa98c5d94b5c1fffea987b",
+      "license": "MIT",
+      "licenseUrl": "https://huggingface.co/ggerganov/whisper.cpp/blob/c521a4b02f422512d734391fdf08bb08c0862f68/LICENSE",
+      "downloadUrl": "https://huggingface.co/ggerganov/whisper.cpp/resolve/c521a4b02f422512d734391fdf08bb08c0862f68/ggml-small.bin",
+      "sourceUrl": "https://huggingface.co/ggerganov/whisper.cpp/tree/c521a4b02f422512d734391fdf08bb08c0862f68",
+      "backend": "whisper.cpp",
+      "precision": "fp16/fp32",
+      "quantization": "none",
+      "capabilities": ["speech-to-text", "hi", "en"],
+      "downloadableToAndroid": true,
+      "minHardware": {
+        "ramMb": 2048,
+        "freeStorageMb": 750,
+        "abis": ["arm64-v8a"],
+        "accelerator": "CPU"
+      },
+      "verification": {
+        "method": "SHA-256",
+        "source": "Hugging Face immutable revision file metadata",
+        "verified": true
+      }
+    }
+  ]
+}

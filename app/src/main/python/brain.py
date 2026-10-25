@@ -23,7 +23,7 @@ _mem = Memory()
 _llm: Any = None
 _tool_bridge: Any = None
 _tool_catalog: List[Dict[str, Any]] = []
-_MAX_TOOL_ROUNDS = 4
+_MAX_TOOL_ROUNDS = 8
 
 _TOOL_CALL_RE = re.compile(
     r"```tool\s*(\{.*?\})\s*```",
@@ -80,7 +80,8 @@ def _tool_block() -> str:
     for t in _tool_catalog[:40]:
         name = t.get("name", "")
         desc = t.get("description_en") or t.get("description_hi") or ""
-        lines.append(f"- {name}: {desc}")
+        parameters = json.dumps(t.get("parameters") or {}, ensure_ascii=False, sort_keys=True)
+        lines.append(f"- {name}: {desc}; parameters={parameters}")
     lines.append(
         "If you need a tool, output ONLY a tool block then wait. "
         "Otherwise answer the user directly in their language."
@@ -126,6 +127,7 @@ def respond(payload_json: str) -> str:
     text = payload.get("userText", "")
     lang = payload.get("detectedLanguage") or detect_language(text)
     history = payload.get("recentMessages", [])[-8:]
+    lessons = payload.get("lessons", [])[-8:]
 
     _mem.remember_message("user", text, lang)
 
@@ -136,6 +138,7 @@ def respond(payload_json: str) -> str:
     base = (
         f"{system}\n\n# CONTEXT\n{context}\n\n"
         f"{tools}\n\n"
+        f"# LESSONS FROM PREVIOUS EXECUTION\n" + "\n".join(lessons) + "\n\n"
         f"# HISTORY\n" + "\n".join(history) + "\n\n"
         f"# USER\n{text}\n\n# ASSISTANT\n"
     )

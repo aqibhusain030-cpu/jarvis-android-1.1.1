@@ -44,7 +44,23 @@ jobs:
           ! grep -RInE --exclude-dir=.git --exclude='*.md'             '(AKIA[0-9A-Z]{16}|AIza[0-9A-Za-z_-]{35}|-----BEGIN (RSA|EC|OPENSSH) PRIVATE KEY-----|ghp_[A-Za-z0-9]{30,})' .
       - name: Sensitive capability scan
         run: |
-          ! grep -RInE --include='AndroidManifest.xml'             'MANAGE_EXTERNAL_STORAGE|QUERY_ALL_PACKAGES|BIND_ACCESSIBILITY_SERVICE|FOREGROUND_SERVICE_DATA_SYNC|ACCESS_BACKGROUND_LOCATION' .
+          ! grep -RInE --include='AndroidManifest.xml'             'MANAGE_EXTERNAL_STORAGE|QUERY_ALL_PACKAGES|FOREGROUND_SERVICE_DATA_SYNC|ACCESS_BACKGROUND_LOCATION' .
+          python - <<'PY'
+          import xml.etree.ElementTree as ET
+          from pathlib import Path
+          p = Path("app/src/main/AndroidManifest.xml")
+          root = ET.parse(p).getroot()
+          ns = {"android": "http://schemas.android.com/apk/res/android"}
+          services = [
+              s for s in root.findall(".//service")
+              if s.get("{http://schemas.android.com/apk/res/android}permission")
+              == "android.permission.BIND_ACCESSIBILITY_SERVICE"
+          ]
+          assert len(services) <= 1, "At most one accessibility service is permitted."
+          for service in services:
+              assert service.get("{http://schemas.android.com/apk/res/android}exported") == "false"
+          print("Accessibility service declaration gate passed")
+          PY
 
   wrapper:
     runs-on: ubuntu-latest
@@ -85,6 +101,16 @@ jobs:
         run: ./gradlew :app:assembleDebug
       - name: Assemble release
         run: ./gradlew :app:assembleRelease
+      - name: Reclaim runner disk space for emulator
+        uses: jlumbroso/free-disk-space@v1.3.1
+        with:
+          android: false
+          tool-cache: true
+          dotnet: true
+          haskell: true
+          swap-storage: true
+          docker-images: false
+          large-packages: false
       - name: Enable KVM for instrumented tests
         run: |
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
@@ -100,6 +126,7 @@ jobs:
           cores: 2
           ram-size: 4096M
           heap-size: 512M
+          disk-size: 2048M
           emulator-options: -no-snapshot-save -no-snapshot-load -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none -no-metrics
           disable-animations: true
           emulator-boot-timeout: 900

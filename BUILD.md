@@ -1,43 +1,58 @@
-# JARVIS build and provisioning
+# JARVIS Android build and model supply chain
 
-## Build
+## Model supply chain
 
-Use JDK 17 and Android SDK API 36 with NDK 26.1.10909125 and CMake 3.22.1.
+Model weights are never trusted by filename alone.
 
-```bash
-./gradlew :app:testDebugUnitTest
-./gradlew :app:lintDebug
-./gradlew :app:assembleDebug
-```
+The production runtime uses the immutable asset catalog:
 
-`gradlew` and `gradlew.bat` are checksum-verified Gradle bootstrap scripts. They download Gradle 8.11.1 only from `services.gradle.org`, verify the pinned SHA-256, then invoke the cached distribution.
+`app/src/main/assets/models/manifest.v1.json`
 
-## Native dependencies
+Every catalog entry requires:
 
-```bash
-export ANDROID_NDK_HOME=.../ndk/26.1.10909125
-bash scripts/build_llama.sh
-bash scripts/build_whisper.sh
-```
+- provider and model ID
+- immutable 40-character revision
+- exact filename and format
+- exact byte size
+- SHA-256 digest
+- license and source URL
+- immutable download URL
+- backend/precision/quantization
+- minimum Android hardware requirements
+- verification metadata
 
-Native sources are fetched only at the immutable commits recorded in `third_party/LOCKFILE`.
+The runtime sequence is:
 
-## Models
+`manifest parse → schema validation → hardware check → download → byte-count check → SHA-256 → atomic install → final SHA-256 → native load`
 
-Large model weights are intentionally not embedded in the source release. The runtime `ModelManager`
-downloads the locked LLM/STT entries into app-private storage and verifies SHA-256 before activation.
-The developer helper `scripts/fetch_models.sh` writes to `.model-cache/`, never into APK assets.
+A model that fails any stage is rejected and is never passed to llama.cpp or whisper.cpp.
 
-The wake-word asset is optional. `scripts/fetch_wakeword.sh` requires an independently verified
-SHA-256 in `JARVIS_WAKEWORD_SHA256`, writes a sidecar digest, and the runtime refuses to load the
-model until that digest matches.
+Large model weights are intentionally not stored in Git. They are downloaded to app-private storage only through the pinned manifest.
 
-## Security
+## Current Android assets
 
-High-risk tools require a one-shot biometric/device-credential unlock plus voice confirmation.
-Sensitive reads require voice confirmation. The persistent kill switch is exposed in Settings and
-in the foreground-service notification. Boot never automatically starts microphone capture.
+- Qwen2.5-3B-Instruct Q4_K_M, llama.cpp backend
+- Whisper.cpp small GGML model
 
-## Static release gate
+The manifest contains the authoritative revisions and digests. Do not replace `resolve/<revision>/...` with `resolve/main/...`, and do not change a digest without independently verifying the upstream artifact.
 
-`bash tools/run-all.sh` performs source-only release validation. It does not execute the Android app or any downloaded native/model artifact.
+## Updating a model
+
+1. Select the exact upstream model revision.
+2. Record the exact file size and SHA-256.
+3. Record the license and source.
+4. Update `manifest.v1.json`.
+5. Update or add regression tests.
+6. Run all CI jobs.
+7. Verify the model on a real target device before release.
+
+Never commit model weights to the source repository merely to avoid the verification process.
+
+
+## Immutable model supply chain
+
+Model weights are never trusted by filename alone. The production runtime uses `app/src/main/assets/models/manifest.v1.json`. Every asset requires an exact provider/model ID, immutable 40-hex revision, format, filename, byte size, SHA-256, license, source URL, pinned download URL, backend, precision/quantization, verification metadata, and minimum hardware.
+
+Runtime sequence: `manifest parse → schema validation → hardware check → download → byte-count check → SHA-256 → atomic install → final SHA-256 → native load`.
+
+Large model weights are intentionally excluded from Git. Never replace a pinned `/resolve/<revision>/...` URL with `/resolve/main/...`, and never change a digest without independently verifying the upstream artifact.
