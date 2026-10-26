@@ -101,6 +101,16 @@ jobs:
         run: ./gradlew :app:assembleDebug
       - name: Assemble release
         run: ./gradlew :app:assembleRelease
+      - name: Upload APK artifacts before emulator tests
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: jarvis-android-apks
+          path: |
+            app/build/outputs/apk/debug/app-debug.apk
+            app/build/outputs/apk/release/*.apk
+          if-no-files-found: error
+          retention-days: 14
       - name: Reclaim runner disk space for emulator
         uses: jlumbroso/free-disk-space@v1.3.1
         with:
@@ -137,12 +147,6 @@ jobs:
           disable-animations: true
           emulator-boot-timeout: 900
           script: ./gradlew :app:connectedDebugAndroidTest --no-daemon --stacktrace
-      - name: Upload debug APK
-        uses: actions/upload-artifact@v7
-        with:
-          name: jarvis-debug-apk
-          path: app/build/outputs/apk/debug/app-debug.apk
-          if-no-files-found: error
 
   native:
     runs-on: ubuntu-24.04
