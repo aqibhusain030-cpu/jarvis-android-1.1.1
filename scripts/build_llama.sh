@@ -21,3 +21,19 @@ cmake -B build-android-arm64 \
   -DLLAMA_BUILD_APP=OFF -DLLAMA_CURL=OFF -DGGML_LLAMAFILE=ON -DGGML_OPENMP=OFF \
   -DCMAKE_BUILD_TYPE=Release
 cmake --build build-android-arm64 --config Release -j"$(nproc)"
+
+# llama.cpp now splits ggml across several shared libraries. Android only loads
+# libraries included in the APK; linking libllama.so does not guarantee that
+# its transitive dependencies are packaged. Stage these exact, matching build
+# outputs in the standard JNI libs source set so voice-service startup can load
+# libjarvis_native.so on-device.
+JNI_LIB_DIR="$ROOT/app/src/main/jniLibs/arm64-v8a"
+mkdir -p "$JNI_LIB_DIR"
+for name in libggml-base.so libggml-cpu.so; do
+  source="$TP/llama.cpp/build-android-arm64/bin/$name"
+  if [[ ! -s "$source" ]]; then
+    echo "Required Android native dependency missing: $source" >&2
+    exit 1
+  fi
+  cp -f "$source" "$JNI_LIB_DIR/$name"
+done
