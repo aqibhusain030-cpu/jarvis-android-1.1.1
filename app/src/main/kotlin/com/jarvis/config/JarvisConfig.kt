@@ -13,7 +13,7 @@ data class JarvisConfig(
     val maxCommandSeconds: Int = 20,
     val ttsSpeed: Float = 1.0f,
     val ttsPitch: Float = 1.0f,
-    val llmModel: String = "Qwen2.5-3B-Instruct-Q4_K_M.gguf",
+    val llmModel: String = "qwen2.5-3b-instruct-q4_k_m.gguf",
     val llmContextSize: Int = 4096,
     val llmThreads: Int = 4,
     val sttModel: String = "ggml-small.bin",
