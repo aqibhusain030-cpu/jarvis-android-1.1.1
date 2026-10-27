@@ -16,6 +16,12 @@ class SpeechRecognizerBridge @Inject constructor(
 ) {
     @Volatile private var ready = false
 
+    /** True only when the approved STT asset exists and passes its SHA-256 check. */
+    fun isModelInstalled(): Boolean {
+        val asset = models.assetForFilename("stt", config.current.value.sttModel) ?: return false
+        return models.verify(asset).verified
+    }
+
     private fun ensureReady(): Boolean {
         if (ready) return true
         val modelName = config.current.value.sttModel

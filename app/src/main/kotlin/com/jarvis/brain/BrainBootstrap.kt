@@ -40,7 +40,23 @@ class BrainBootstrap @Inject constructor(
         private set
 
     suspend fun bootstrap(): Boolean = withContext(Dispatchers.IO) {
-        if (bootstrapped) return@withContext llmReady
+        if (bootstrapped) {
+            // A model may have been downloaded after first launch. Retry loading it
+            // instead of permanently caching the initial "model missing" result.
+            if (llmReady) return@withContext true
+            try {
+                python.startIfNeeded()
+                llmReady = if (config.current.value.remoteInferenceEnabled) true else llm.loadLocal()
+                if (llmReady) {
+                    python.call("set_llm", llm)
+                    logger.i(TAG, "LLM loaded after model setup")
+                }
+                return@withContext llmReady
+            } catch (t: Throwable) {
+                logger.e(TAG, "LLM retry after setup failed", t)
+                return@withContext false
+            }
+        }
         try {
             python.startIfNeeded()
 
