@@ -9,7 +9,8 @@ permissions:
 
 concurrency:
   group: jarvis-ci-${{ github.ref }}
-  cancel-in-progress: true
+  # Keep emulator boot/test runs alive when a newer commit arrives on the same ref.
+  cancel-in-progress: false
 
 jobs:
   static-security:
