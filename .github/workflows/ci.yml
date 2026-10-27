@@ -86,6 +86,29 @@ jobs:
         run: ./gradlew :app:assembleDebug
       - name: Assemble release
         run: ./gradlew :app:assembleRelease
+      - name: Reclaim disk space for Android emulator
+        run: |
+          set -euo pipefail
+          echo "Disk usage before cleanup:"
+          df -h "$HOME" "$RUNNER_TEMP"
+
+          # These toolchains are preinstalled on GitHub-hosted runners but are
+          # not used by this Android/Java/Chaquopy workflow.
+          for path in /usr/share/dotnet /usr/local/share/boost /opt/ghc; do
+            if sudo test -d "$path"; then
+              sudo du -sh "$path" || true
+              sudo rm -rf "$path"
+            fi
+          done
+          sudo apt-get clean
+
+          echo "Disk usage after cleanup:"
+          df -h "$HOME" "$RUNNER_TEMP"
+          available_mb="$(df -BM --output=avail "$HOME" | tail -n 1 | tr -cd '0-9')"
+          if [[ "$available_mb" -lt 4096 ]]; then
+            echo "::error::Only ${available_mb} MiB free before emulator setup; need at least 4096 MiB for a 3072 MiB userdata partition and system headroom."
+            exit 1
+          fi
       - name: Enable KVM for instrumented tests
         run: |
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
@@ -101,6 +124,9 @@ jobs:
           cores: 2
           ram-size: 4096M
           heap-size: 512M
+          # Logs showed the default userdata partition needed 7372 MiB while
+          # only 4503 MiB was free. A 3 GiB partition is enough for CI tests.
+          disk-size: 3072M
           emulator-options: -no-snapshot-save -no-snapshot-load -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none -no-metrics
           disable-animations: true
           emulator-boot-timeout: 900
