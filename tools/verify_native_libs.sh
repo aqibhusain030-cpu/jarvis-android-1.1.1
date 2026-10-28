@@ -65,11 +65,32 @@ for arch in arm64 x86_64; do
       esac
     done < <(printf '%s\n' "$needed" | sed -n 's/.*Shared library: \[\([^]]*\)\].*/\1/p')
 
-    if ! "$READELF" -lW "$lib" | grep -Eq 'LOAD.*(0x4000|0x10000)'; then
-      echo "$arch: $lib does not show a 16 KiB page-aligned LOAD segment; inspect ELF headers below:" >&2
-      "$READELF" -lW "$lib" | grep LOAD || true
+    # Every PT_LOAD segment must meet 16 KiB alignment. Checking only whether
+    # one segment contains 0x4000 would allow another segment aligned to 4 KiB
+    # to slip through and produce a false-positive verification result.
+    if ! load_table="$("$READELF" -lW "$lib")"; then
+      echo "$arch: ELF program-header inspection failed for $lib using $READELF" >&2
       exit 1
     fi
+    load_alignments="$(printf '%s\n' "$load_table" | awk '$1 == "LOAD" { print $NF }')"
+    if [[ -z "$load_alignments" ]]; then
+      echo "$arch: no LOAD segments found in $lib" >&2
+      exit 1
+    fi
+    while IFS= read -r alignment; do
+      [[ -n "$alignment" ]] || continue
+      if [[ ! "$alignment" =~ ^0[xX][0-9a-fA-F]+$ ]]; then
+        echo "$arch: unrecognized LOAD alignment '$alignment' in $lib" >&2
+        printf '%s\n' "$load_table" | grep LOAD >&2 || true
+        exit 1
+      fi
+      alignment_value=$((alignment))
+      if (( alignment_value < 16384 || (alignment_value & (alignment_value - 1)) != 0 )); then
+        echo "$arch: invalid 16 KiB LOAD alignment '$alignment' in $lib" >&2
+        printf '%s\n' "$load_table" | grep LOAD >&2 || true
+        exit 1
+      fi
+    done <<< "$load_alignments"
   done
   echo "Native dependency and 16 KiB alignment checks passed for $arch"
 done
