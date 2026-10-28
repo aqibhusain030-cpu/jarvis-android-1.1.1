@@ -15,7 +15,7 @@ android {
         applicationId = "com.jarvis"
         minSdk = 31
         targetSdk = 36
-        ndkVersion = "26.1.10909125"
+        ndkVersion = "28.2.13676358"
         versionCode = 3
         versionName = "1.1.1"
         ndk { abiFilters += listOf("arm64-v8a", "x86_64") }
