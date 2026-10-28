@@ -37,7 +37,7 @@ for arch in arm64 x86_64; do
     done < <(printf '%s\n' "$needed" | sed -n 's/.*Shared library: \[\([^]]*\)\].*/\1/p')
 
     # NDK r26 needs an explicit max-page-size linker flag for 16 KiB ELF LOADs.
-    if ! "$READELF" -l "$lib" | awk '/LOAD/ { if ($NF == "0x4000" || $NF == "0x4000") found=1 } END { exit(found ? 0 : 1) }'; then
+    if ! "$READELF" -l "$lib" | awk '/LOAD/ { count++; if ($NF != "0x4000") bad=1 } END { exit(count > 0 && !bad ? 0 : 1) }'; then
       echo "$arch: $lib does not show 16 KiB LOAD alignment; inspect llvm-readelf -l output" >&2
       "$READELF" -l "$lib" | grep LOAD || true
       exit 1
