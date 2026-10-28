@@ -1,45 +1,90 @@
 #!/usr/bin/env bash
 set -euo pipefail
+
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 APK="${1:-$ROOT/app/build/outputs/apk/debug/app-debug.apk}"
-NDK="${ANDROID_NDK_HOME:-}"
+source "$ROOT/tools/lib/elf_inspection.sh"
+
 [[ -f "$APK" ]] || { echo "APK not found: $APK" >&2; exit 2; }
-[[ -n "$NDK" ]] || { echo "ANDROID_NDK_HOME is required" >&2; exit 2; }
-READELF="$(find "$NDK/toolchains/llvm/prebuilt" -type f -name llvm-readelf -print -quit)"
-[[ -n "$READELF" ]] || { echo "llvm-readelf not found under $NDK" >&2; exit 2; }
+
+READELF="$(resolve_elf_tool)" || {
+  echo "Unable to locate a usable llvm-readelf/readelf tool." >&2
+  exit 2
+}
+printf 'ELF tool: %s\n' "$READELF"
+printf 'ELF tool version: %s\n' "$("$READELF" --version 2>/dev/null | head -n 1 || printf 'unknown')"
+
+resolve_zipalign() {
+  local -a candidates=()
+  local root candidate
+  if command -v zipalign >/dev/null 2>&1; then
+    candidates+=("$(command -v zipalign)")
+  fi
+  for root in "${ANDROID_HOME:-}" "${ANDROID_SDK_ROOT:-}"; do
+    [[ -n "$root" && -d "$root/build-tools" ]] || continue
+    while IFS= read -r candidate; do
+      [[ -n "$candidate" ]] && candidates+=("$candidate")
+    done < <(find "$root/build-tools" -type f -name zipalign -perm -u+x -print 2>/dev/null | sort -V -r)
+  done
+  for candidate in "${candidates[@]}"; do
+    [[ -x "$candidate" ]] || continue
+    if "$candidate" -h 2>&1 | grep -q -- '-P'; then
+      printf '%s\n' "$candidate"
+      return 0
+    fi
+  done
+  echo "A zipalign supporting -P 16 is required to verify APK native-library page alignment." >&2
+  return 1
+}
+
+ZIPALIGN="$(resolve_zipalign)" || exit 2
+"$ZIPALIGN" -c -P 16 4 "$APK" || {
+  echo "APK ZIP alignment check failed (required 16 KiB native-library alignment): $APK" >&2
+  exit 1
+}
+
 TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
 unzip -q "$APK" -d "$TMP"
 
 for abi in arm64-v8a x86_64; do
+  case "$abi" in
+    arm64-v8a) arch="arm64" ;;
+    x86_64) arch="x86_64" ;;
+  esac
   dir="$TMP/lib/$abi"
-  [[ -d "$dir" ]] || { echo "APK is missing ABI directory lib/$abi" >&2; exit 1; }
-  for name in libjarvis_native.so libllama.so libwhisper.so libggml.so libggml-base.so; do
-    [[ -f "$dir/$name" ]] || { echo "APK is missing lib/$abi/$name" >&2; exit 1; }
-  done
-  # A single GGML SONAME per ABI avoids packaging collisions and ambiguous resolution.
-  count="$(find "$dir" -maxdepth 1 -type f -name 'libggml.so' | wc -l | tr -d ' ')"
-  [[ "$count" == "1" ]] || { echo "Expected exactly one libggml.so in lib/$abi; found $count" >&2; exit 1; }
+  [[ -d "$dir" ]] || {
+    echo "APK is missing ABI directory lib/$abi" >&2
+    exit 1
+  }
 
-  for name in libjarvis_native.so libllama.so libwhisper.so "$dir"/libggml*.so; do
-    [[ -f "$dir/$name" ]] && lib="$dir/$name" || lib="$name"
-    [[ -f "$lib" ]] || continue
-    needed="$("$READELF" -d "$lib")"
-    while IFS= read -r dependency; do
-      [[ -n "$dependency" ]] || continue
-      case "$dependency" in
-        libggml*.so*) [[ -f "$dir/$dependency" ]] || {
-          echo "$abi: $(basename "$lib") needs $dependency, but it is not packaged" >&2
-          exit 1
-        } ;;
-      esac
-    done < <(printf '%s\n' "$needed" | sed -n 's/.*Shared library: \[\([^]]*\)\].*/\1/p')
-
-    if ! "$READELF" -l "$lib" | awk '/LOAD/ { if ($NF == "0x4000") found=1 } END { exit(found ? 0 : 1) }'; then
-      echo "$abi: $(basename "$lib") lacks 16 KiB LOAD alignment" >&2
-      "$READELF" -l "$lib" | grep LOAD || true
+  for required in libjarvis_native.so libllama.so libwhisper.so libggml.so libggml-base.so libc++_shared.so; do
+    [[ -f "$dir/$required" ]] || {
+      echo "APK is missing required library lib/$abi/$required" >&2
       exit 1
-    fi
+    }
   done
-  echo "APK native linkage checks passed for $abi"
+
+  shopt -s nullglob
+  libs=("$dir"/*.so)
+  shopt -u nullglob
+  (( ${#libs[@]} > 0 )) || {
+    echo "APK contains no shared libraries under lib/$abi" >&2
+    exit 1
+  }
+
+  for lib in "${libs[@]}"; do
+    validate_elf_file "$lib" "$READELF" "$arch" || {
+      echo "APK ELF validation failed for $lib" >&2
+      exit 1
+    }
+    validate_dependency_closure "$lib" "$READELF" "$arch" "$dir" || exit 1
+  done
+
+  # Fail on SONAME collisions, including duplicate vendored GGML implementations.
+  validate_no_soname_conflicts "$READELF" "${libs[@]}" || exit 1
+
+  echo "APK native architecture, dependency closure, SONAME uniqueness, and 16 KiB LOAD alignment passed for $abi"
 done
+
+echo "APK verification passed: $APK"
