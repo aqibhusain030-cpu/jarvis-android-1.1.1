@@ -16,7 +16,7 @@ printf 'ELF tool version: %s\n' "$("$READELF" --version 2>/dev/null | head -n 1 
 
 resolve_zipalign() {
   local -a candidates=()
-  local root candidate
+  local root candidate help_output help_status
   if command -v zipalign >/dev/null 2>&1; then
     candidates+=("$(command -v zipalign)")
   fi
@@ -28,10 +28,18 @@ resolve_zipalign() {
   done
   for candidate in "${candidates[@]}"; do
     [[ -x "$candidate" ]] || continue
-    if "$candidate" -h 2>&1 | grep -q -- '-P'; then
+    help_status=0
+    help_output="$("$candidate" --help 2>&1)" || help_status=$?
+    if [[ "$help_output" != *"-P <pagesize_kb>"* ]]; then
+      help_status=0
+      help_output="$("$candidate" -h 2>&1)" || help_status=$?
+    fi
+    if [[ "$help_output" == *"-P <pagesize_kb>"* ]]; then
       printf '%s\n' "$candidate"
       return 0
     fi
+    printf 'Rejecting zipalign candidate without verified -P <pagesize_kb> support: %s (help exit %s)\n' \
+      "$candidate" "$help_status" >&2
   done
   echo "A zipalign supporting -P 16 is required to verify APK native-library page alignment." >&2
   return 1

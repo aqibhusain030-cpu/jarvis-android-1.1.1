@@ -28,7 +28,9 @@ jobs:
       - name: Structured metadata checks
         run: bash tools/verify_release.sh
       - name: Source contract checks
-        run: python tools/test_source_contracts.py
+        run: |
+          python tools/test_source_contracts.py
+          python tools/test_native_apk_verifier.py
       - name: XML parse gate
         run: |
           python - <<'PY'
