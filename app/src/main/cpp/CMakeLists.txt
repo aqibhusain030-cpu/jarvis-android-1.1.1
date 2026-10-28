@@ -18,13 +18,13 @@ set(LLAMA_ROOT "${NATIVE_DIR}/third_party/llama.cpp")
 set(WHISPER_ROOT "${NATIVE_DIR}/third_party/whisper.cpp")
 set(LLAMA_INSTALL "${LLAMA_ROOT}/install-android-${ARCH}")
 set(LLAMA_LIB_DIR "${LLAMA_INSTALL}/lib")
-set(WHISPER_BIN "${WHISPER_ROOT}/build-android-${ARCH}/bin")
+set(WHISPER_LIB_DIR "${WHISPER_ROOT}/install-android-${ARCH}/lib")
 
 foreach(required_file
         "${LLAMA_LIB_DIR}/libllama.so"
         "${LLAMA_LIB_DIR}/libggml.so"
         "${LLAMA_LIB_DIR}/libggml-base.so"
-        "${WHISPER_BIN}/libwhisper.so")
+        "${WHISPER_LIB_DIR}/libwhisper.so")
     if(NOT EXISTS "${required_file}")
         message(FATAL_ERROR
             "Missing native dependency: ${required_file}. "
@@ -39,7 +39,7 @@ set_target_properties(llama PROPERTIES
 
 add_library(whisper SHARED IMPORTED GLOBAL)
 set_target_properties(whisper PROPERTIES
-    IMPORTED_LOCATION "${WHISPER_BIN}/libwhisper.so"
+    IMPORTED_LOCATION "${WHISPER_LIB_DIR}/libwhisper.so"
     INTERFACE_INCLUDE_DIRECTORIES "${WHISPER_ROOT}/include")
 
 # Both upstream projects are configured to use the exact same llama.cpp GGML
