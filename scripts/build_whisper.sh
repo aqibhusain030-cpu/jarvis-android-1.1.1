@@ -18,16 +18,21 @@ for pair in "arm64-v8a:arm64" "x86_64:x86_64"; do
   build_dir="$TP/whisper.cpp/build-android-${arch}"
   install_prefix="$TP/whisper.cpp/install-android-${arch}"
   ggml_prefix="$TP/llama.cpp/install-android-${arch}"
-  test -f "$ggml_prefix/lib/cmake/ggml/ggml-config.cmake" || {
-    echo "Missing llama.cpp GGML package for ${abi}: $ggml_prefix" >&2
+  ggml_config_dir="$ggml_prefix/lib/cmake/ggml"
+  test -f "$ggml_config_dir/ggml-config.cmake" || {
+    echo "Missing llama.cpp GGML package for ${abi}: $ggml_config_dir/ggml-config.cmake" >&2
+    echo "Installed GGML directory contents:" >&2
+    find "$ggml_prefix/lib" -maxdepth 3 -type f -print 2>/dev/null | sort >&2 || true
     echo "Run scripts/build_llama.sh first." >&2
     exit 1
   }
   echo "Building whisper.cpp for ${abi} against the shared llama.cpp GGML package"
-  rm -rf "$install_prefix"
+  echo "Using GGML CMake package: $ggml_config_dir"
+  rm -rf "$build_dir" "$install_prefix"
   cmake -S "$TP/whisper.cpp" -B "$build_dir" \
     -DCMAKE_TOOLCHAIN_FILE="$ANDROID_NDK_HOME/build/cmake/android.toolchain.cmake" \
     -DANDROID_ABI="$abi" -DANDROID_PLATFORM=android-31 \
+    -Dggml_DIR="$ggml_config_dir" \
     -DCMAKE_PREFIX_PATH="$ggml_prefix" \
     -DWHISPER_USE_SYSTEM_GGML=ON \
     -DWHISPER_BUILD_TESTS=OFF -DWHISPER_BUILD_EXAMPLES=OFF \
