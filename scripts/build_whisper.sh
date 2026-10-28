@@ -16,6 +16,7 @@ git -C "$TP/whisper.cpp" checkout --detach --force "$WHISPER_COMMIT"
 for pair in "arm64-v8a:arm64" "x86_64:x86_64"; do
   IFS=: read -r abi arch <<< "$pair"
   build_dir="$TP/whisper.cpp/build-android-${arch}"
+  install_prefix="$TP/whisper.cpp/install-android-${arch}"
   ggml_prefix="$TP/llama.cpp/install-android-${arch}"
   test -f "$ggml_prefix/lib/cmake/ggml/ggml-config.cmake" || {
     echo "Missing llama.cpp GGML package for ${abi}: $ggml_prefix" >&2
@@ -23,6 +24,7 @@ for pair in "arm64-v8a:arm64" "x86_64:x86_64"; do
     exit 1
   }
   echo "Building whisper.cpp for ${abi} against the shared llama.cpp GGML package"
+  rm -rf "$install_prefix"
   cmake -S "$TP/whisper.cpp" -B "$build_dir" \
     -DCMAKE_TOOLCHAIN_FILE="$ANDROID_NDK_HOME/build/cmake/android.toolchain.cmake" \
     -DANDROID_ABI="$abi" -DANDROID_PLATFORM=android-31 \
@@ -31,8 +33,12 @@ for pair in "arm64-v8a:arm64" "x86_64:x86_64"; do
     -DWHISPER_BUILD_TESTS=OFF -DWHISPER_BUILD_EXAMPLES=OFF \
     -DWHISPER_BUILD_SERVER=OFF -DWHISPER_CURL=OFF \
     -DBUILD_SHARED_LIBS=ON -DGGML_NATIVE=OFF \
+    -DCMAKE_INSTALL_PREFIX="$install_prefix" -DCMAKE_INSTALL_LIBDIR=lib \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_SHARED_LINKER_FLAGS=-Wl,-z,max-page-size=16384
   cmake --build "$build_dir" --config Release -j"$(nproc)"
-  test -f "$build_dir/bin/libwhisper.so"
+  cmake --install "$build_dir" --config Release
+  # The app consumes the installed library, so remove large intermediates.
+  rm -rf "$build_dir"
+  test -f "$install_prefix/lib/libwhisper.so"
 done
