@@ -24,9 +24,7 @@ jobs:
         run: python -m compileall -q app/src/main/python
       - name: Shell syntax
         run: |
-          for f in scripts/*.sh tools/*.sh; do
-            bash -n "$f"
-          done
+          find scripts tools -type f -name '*.sh' -print0 | xargs -0 -r -n1 bash -n
       - name: Structured metadata checks
         run: bash tools/verify_release.sh
       - name: Source contract checks
