@@ -74,4 +74,6 @@ target_link_libraries(jarvis_native PRIVATE
 
 target_link_options(jarvis_native PRIVATE -Wl,--no-undefined -Wl,-z,max-page-size=16384)
 target_compile_options(jarvis_native PRIVATE
-    $<$<CONFIG:Release>:-O3;-ffast-math;-fno-finite-math-only>)
+    "$<$<CONFIG:Release>:-O3>"
+    "$<$<CONFIG:Release>:-ffast-math>"
+    "$<$<CONFIG:Release>:-fno-finite-math-only>")
