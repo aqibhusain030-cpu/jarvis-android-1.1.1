@@ -31,6 +31,8 @@ for pair in "arm64-v8a:arm64" "x86_64:x86_64"; do
     -DCMAKE_SHARED_LINKER_FLAGS=-Wl,-z,max-page-size=16384
   cmake --build "$TP/llama.cpp/$build_dir" --config Release -j"$(nproc)"
   cmake --install "$TP/llama.cpp/$build_dir" --config Release
+  # Keep only the install tree needed by the app; build intermediates are large.
+  rm -rf "$TP/llama.cpp/$build_dir"
 
   test -f "$install_prefix/lib/libllama.so"
   test -f "$install_prefix/lib/libggml.so"
