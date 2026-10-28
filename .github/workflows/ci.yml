@@ -138,6 +138,11 @@ jobs:
           emulator-options: -no-snapshot-save -no-snapshot-load -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none -no-metrics
           disable-animations: true
           emulator-boot-timeout: 900
+          # Replace the action-appended value so the AVD does not retain its larger default partition.
+          pre-emulator-launch-script: >-
+            sed -i '/^disk\.dataPartition\.size=/d' "$ANDROID_AVD_HOME/test.avd/config.ini" &&
+            printf 'disk.dataPartition.size=3072M\n' >> "$ANDROID_AVD_HOME/test.avd/config.ini" &&
+            test "$(grep -Fxc 'disk.dataPartition.size=3072M' "$ANDROID_AVD_HOME/test.avd/config.ini")" -eq 1
           script: ./gradlew :app:connectedDebugAndroidTest --no-daemon --stacktrace
       - name: Upload debug APK
         uses: actions/upload-artifact@v7
