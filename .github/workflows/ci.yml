@@ -100,21 +100,28 @@ jobs:
           echo "Disk usage before cleanup:"
           df -h "$HOME" "$RUNNER_TEMP"
 
-          # These toolchains are preinstalled on GitHub-hosted runners but are
-          # not used by this Android/Java/Chaquopy workflow.
-          for path in /usr/share/dotnet /usr/local/share/boost /opt/ghc /usr/share/swift; do
+          # These preinstalled toolchains are not used by this Android/Java/Chaquopy workflow.
+          for path in /usr/share/dotnet /usr/local/share/boost /opt/ghc \
+                      /usr/local/.ghcup /usr/share/swift \
+                      "${AGENT_TOOLSDIRECTORY:-/opt/hostedtoolcache}/CodeQL"; do
             if sudo test -d "$path"; then
               sudo du -sh "$path" || true
               sudo rm -rf "$path"
             fi
           done
+
+          # This workflow does not use container images or pre-pulled Docker images.
+          docker image prune --all --force || true
           sudo apt-get clean
 
           echo "Disk usage after cleanup:"
           df -h "$HOME" "$RUNNER_TEMP"
           available_mb="$(df -BM --output=avail "$HOME" | tail -n 1 | tr -cd '0-9')"
-          if [[ "$available_mb" -lt 13312 ]]; then
-            echo "::error::Only ${available_mb} MiB free before emulator setup; need at least 13312 MiB for the API 35 SDK image and userdata partition."
+          # android-emulator-runner downloads SDK components after this step.
+          # A previous run then had 7309.70 MB available, below the 7372.80 MB
+          # userdata requirement. Budget for those downloads plus extra headroom.
+          if [[ "$available_mb" -lt 14000 ]]; then
+            echo "::error::Only ${available_mb} MiB free after cleanup; need at least 14000 MiB before emulator SDK installation and userdata provisioning."
             exit 1
           fi
       - name: Enable KVM for instrumented tests
@@ -136,9 +143,10 @@ jobs:
           disk-size: 6G
           emulator-options: -no-snapshot-save -no-snapshot-load -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none -no-metrics
           disable-animations: true
-          emulator-boot-timeout: 900
+          emulator-boot-timeout: 300
           script: ./gradlew :app:connectedDebugAndroidTest --no-daemon --stacktrace
       - name: Upload debug APK
+        if: always()
         uses: actions/upload-artifact@v7
         with:
           name: jarvis-debug-apk
