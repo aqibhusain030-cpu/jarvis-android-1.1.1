@@ -49,7 +49,7 @@ Wake word → VAD → Whisper STT → BrainBridge
 
 ```bash
 unzip jarvis-android-complete.zip && cd jarvis-android
-export ANDROID_NDK_HOME=…/ndk/26.1.10909125
+export ANDROID_NDK_HOME=…/ndk/28.2.13676358
 bash scripts/build_llama.sh && bash scripts/build_whisper.sh
 # Pin real SHA-256 in ModelManifest.kt, then:
 bash scripts/fetch_models.sh

@@ -17,7 +17,7 @@ assistant for Android 12+. Runs as a real APK. No Termux. No mandatory cloud.
 - Android 12 (API 31) minimum, Android 14 (API 34) target.
 - arm64-v8a device with ≥ 8 GB RAM (12 GB recommended).
 - ~4 GB free storage (LLM + STT + wake word models).
-- JDK 17, Android Studio Hedgehog+, NDK r26+, CMake 3.22+, Python 3.10, git, curl.
+- JDK 17, Android Studio Hedgehog+, NDK 28.2.13676358, CMake 3.22+, Python 3.10, git, curl.
 
 ## Project layout
 
@@ -39,7 +39,7 @@ jarvis-android/
 cd jarvis-android
 
 # 1. Native engines (requires ANDROID_NDK_HOME)
-export ANDROID_NDK_HOME="${ANDROID_NDK_HOME:-$HOME/Android/Sdk/ndk/26.1.10909125}"
+export ANDROID_NDK_HOME="${ANDROID_NDK_HOME:-$HOME/Android/Sdk/ndk/28.2.13676358}"
 bash scripts/build_llama.sh
 bash scripts/build_whisper.sh
 

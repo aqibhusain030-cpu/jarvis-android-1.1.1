@@ -5,6 +5,8 @@ import com.jarvis.logging.JarvisLogger
 import com.jarvis.models.ModelManager
 import com.jarvis.tools.ToolRegistry
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
@@ -13,11 +15,11 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
- * One-shot production bootstrap:
- * 1. Ensure Python is running
- * 2. Load local LLM into [LocalLlmEngine] and pass it to Python `set_llm`
- * 3. Install [ToolBridgeKotlin] as Python `tools_bridge.set_dispatcher`
- * 4. Publish tool specs so the LLM can emit structured tool calls
+ * Production bootstrap for the Python brain, tool bridge, and local LLM.
+ *
+ * Python/tool setup is initialized once. LLM loading is deliberately retried:
+ * model files may be downloaded after the service has started, and a verified
+ * file is not the same thing as a model already loaded into native memory.
  */
 @Singleton
 class BrainBootstrap @Inject constructor(
@@ -29,6 +31,8 @@ class BrainBootstrap @Inject constructor(
     private val config: ConfigRepository,
     private val logger: JarvisLogger
 ) {
+    private val bootstrapMutex = Mutex()
+
     @Volatile
     var bootstrapped: Boolean = false
         private set
@@ -37,29 +41,50 @@ class BrainBootstrap @Inject constructor(
     var llmReady: Boolean = false
         private set
 
+    @Volatile
+    private var llmWired: Boolean = false
+
+    /**
+     * Returns true when the base runtime was initialized. LLM availability is
+     * reported separately by [llmReady], since tool-only fallback mode is valid.
+     */
     suspend fun bootstrap(): Boolean = withContext(Dispatchers.IO) {
-        if (bootstrapped) return@withContext llmReady
-        try {
-            python.startIfNeeded()
+        bootstrapMutex.withLock {
+            try {
+                python.startIfNeeded()
 
-            // Wire tool dispatcher into Python first (works even without LLM).
-            python.call("install_tool_dispatcher", toolBridge)
-            publishToolCatalog()
+                if (!bootstrapped) {
+                    // Tool execution remains available even when the local LLM
+                    // file is missing, invalid, or temporarily fails to load.
+                    python.call("install_tool_dispatcher", toolBridge)
+                    publishToolCatalog()
+                    bootstrapped = true
+                }
 
-            // Load LLM if model file is present and verified.
-            llmReady = llm.loadIfNeeded()
-            if (llmReady) {
-                python.call("set_llm", llm)
-                logger.i(TAG, "LLM wired into Python brain")
-            } else {
-                logger.w(TAG, "LLM not loaded — brain will use fallback replies")
+                // Do not permanently cache a failed first load. The model may
+                // have been downloaded after the first service start, or the
+                // first native initialization may have failed transiently.
+                llmReady = if (llm.ready) {
+                    true
+                } else {
+                    llm.loadIfNeeded()
+                }
+
+                if (llmReady && !llmWired) {
+                    python.call("set_llm", llm)
+                    // Mark wired only after the Python call has returned.
+                    llmWired = true
+                    logger.i(TAG, "LLM loaded and wired into Python brain")
+                } else if (!llmReady) {
+                    logger.w(TAG, "LLM is not ready; model loading will be retried on the next bootstrap")
+                }
+
+                true
+            } catch (t: Throwable) {
+                llmReady = llm.ready && llmWired
+                logger.e(TAG, "bootstrap failed", t)
+                false
             }
-
-            bootstrapped = true
-            true
-        } catch (t: Throwable) {
-            logger.e(TAG, "bootstrap failed", t)
-            false
         }
     }
 
@@ -81,13 +106,15 @@ class BrainBootstrap @Inject constructor(
         logger.i(TAG, "Published ${registry.all().size} tool specs to Python")
     }
 
-    /** Best-effort model presence report for UI/onboarding. */
+    /** File verification and runtime readiness are intentionally separate states. */
     fun modelStatus(): Map<String, Boolean> {
         val out = mutableMapOf<String, Boolean>()
         for (e in models.all()) {
             out[e.id] = models.isPresent(e)
         }
         out["llm_engine"] = llm.ready
+        out["llm_wired"] = llmWired
+        out["llm_ready"] = llm.ready && llmWired
         return out
     }
 

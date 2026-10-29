@@ -2,7 +2,7 @@
 
 ## Build
 
-Use JDK 17 and Android SDK API 36 with NDK 26.1.10909125 and CMake 3.22.1.
+Use JDK 17 and Android SDK API 36 with NDK 28.2.13676358 and CMake 3.22.1.
 
 ```bash
 ./gradlew :app:testDebugUnitTest
@@ -15,7 +15,7 @@ Use JDK 17 and Android SDK API 36 with NDK 26.1.10909125 and CMake 3.22.1.
 ## Native dependencies
 
 ```bash
-export ANDROID_NDK_HOME=.../ndk/26.1.10909125
+export ANDROID_NDK_HOME=.../ndk/28.2.13676358
 bash scripts/build_llama.sh
 bash scripts/build_whisper.sh
 ```
