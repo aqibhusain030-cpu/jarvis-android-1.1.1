@@ -45,6 +45,18 @@ object FridayOperationCatalog {
         op("device.wifi", FridayOperationSpec.Domain.NETWORK, "Inspect or control Wi-Fi", "wifi_status"),
         op("device.bluetooth", FridayOperationSpec.Domain.NETWORK, "Inspect or control Bluetooth", "bluetooth_status"),
         op("network.http_get", FridayOperationSpec.Domain.NETWORK, "Perform an allowlisted HTTP GET", "http_get", FridayRisk.HIGH),
+        op("network.dns_resolve", FridayOperationSpec.Domain.NETWORK, "Resolve DNS inside an authorized scope", "network.dns_resolve"),
+        op("network.tcp_probe", FridayOperationSpec.Domain.NETWORK, "Probe TCP connectivity inside an authorized scope", "network.tcp_probe", FridayRisk.MEDIUM),
+        op("network.udp_probe", FridayOperationSpec.Domain.NETWORK, "Send a bounded UDP probe inside an authorized scope", "network.udp_probe", FridayRisk.MEDIUM),
+        op("network.websocket_probe", FridayOperationSpec.Domain.NETWORK, "Probe secure WebSocket connectivity inside an authorized scope", "network.websocket_probe", FridayRisk.MEDIUM),
+        op("network.port_scan", FridayOperationSpec.Domain.NETWORK, "Perform a bounded port scan inside an authorized scope", "network.port_scan", FridayRisk.HIGH),
+        op("network.service_detect", FridayOperationSpec.Domain.NETWORK, "Identify an observed service inside an authorized scope", "network.service_detect", FridayRisk.MEDIUM),
+        op("network.tls_inspect", FridayOperationSpec.Domain.NETWORK, "Inspect TLS metadata inside an authorized scope", "network.tls_inspect", FridayRisk.MEDIUM),
+        op("network.inventory", FridayOperationSpec.Domain.NETWORK, "Read the authorized network inventory", "network.inventory"),
+        op("network.status", FridayOperationSpec.Domain.NETWORK, "Read live Android network state", "network.status"),
+        op("network.routes", FridayOperationSpec.Domain.NETWORK, "Read Android routes and DNS state", "network.routes"),
+        op("network.target_profile", FridayOperationSpec.Domain.NETWORK, "Build a structured authorized target profile", "network.target_profile", FridayRisk.MEDIUM),
+        op("websec.analyze", FridayOperationSpec.Domain.SECURITY, "Analyze safe web security controls in an authorized scope", "websec.analyze", FridayRisk.HIGH),
         op("network.http_post", FridayOperationSpec.Domain.NETWORK, "Perform an allowlisted HTTP POST", "http_post", FridayRisk.HIGH),
         op("network.news", FridayOperationSpec.Domain.NETWORK, "Fetch near-real-time news", "get_news", FridayRisk.LOW),
         op("device.navigation", FridayOperationSpec.Domain.DEVICE, "Perform bounded Android navigation", "device_navigation"),
@@ -58,7 +70,10 @@ object FridayOperationCatalog {
         op("security.assess", FridayOperationSpec.Domain.SECURITY, "Assess application security posture", "security.assess.app", FridayRisk.MEDIUM),
         op("security.simulate", FridayOperationSpec.Domain.SECURITY, "Model an authorized exploit path", "security.simulate.exploit", FridayRisk.HIGH),
         op("security.monitor", FridayOperationSpec.Domain.SECURITY, "Manage authorized security monitoring", "security.monitor.enable", FridayRisk.HIGH),
-        op("security.scope", FridayOperationSpec.Domain.SECURITY, "Enroll an authorized security target", "security.scope.enroll", FridayRisk.HIGH)
+        op("security.scope", FridayOperationSpec.Domain.SECURITY, "Enroll an authorized security target", "security.scope.enroll", FridayRisk.HIGH),
+        op("security.plan", FridayOperationSpec.Domain.SECURITY, "Generate an authorized assessment plan", "security.plan", FridayRisk.HIGH),
+        op("security.verify", FridayOperationSpec.Domain.SECURITY, "Re-test an authorized security finding", "security.verify.port", FridayRisk.HIGH),
+        op("security.evidence", FridayOperationSpec.Domain.SECURITY, "Record structured security evidence", "security.evidence.record", FridayRisk.MEDIUM)
     )
 
     private fun op(

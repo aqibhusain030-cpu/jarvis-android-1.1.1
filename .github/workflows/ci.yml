@@ -13,7 +13,7 @@ concurrency:
 
 jobs:
   static-security:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v7
@@ -63,14 +63,14 @@ jobs:
           PY
 
   wrapper:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v7
       - name: Verify complete wrapper
         run: bash tools/check_wrapper.sh
 
   gradle-tests:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-java@v6
@@ -101,16 +101,32 @@ jobs:
         run: ./gradlew :app:assembleDebug
       - name: Assemble release
         run: ./gradlew :app:assembleRelease
+      - name: Upload APK artifacts before emulator tests
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: jarvis-android-apks
+          path: |
+            app/build/outputs/apk/debug/app-debug.apk
+            app/build/outputs/apk/release/*.apk
+          if-no-files-found: error
+          retention-days: 14
       - name: Reclaim runner disk space for emulator
         uses: jlumbroso/free-disk-space@v1.3.1
         with:
           android: false
-          tool-cache: true
+          tool-cache: false
           dotnet: true
           haskell: true
-          swap-storage: true
+          swap-storage: false
           docker-images: false
           large-packages: false
+      - name: Verify toolchain after disk cleanup
+        run: |
+          test -x "$JAVA_HOME/bin/java"
+          java -version
+          python --version
+          df -h /
       - name: Enable KVM for instrumented tests
         run: |
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
@@ -131,15 +147,9 @@ jobs:
           disable-animations: true
           emulator-boot-timeout: 900
           script: ./gradlew :app:connectedDebugAndroidTest --no-daemon --stacktrace
-      - name: Upload debug APK
-        uses: actions/upload-artifact@v7
-        with:
-          name: jarvis-debug-apk
-          path: app/build/outputs/apk/debug/app-debug.apk
-          if-no-files-found: error
 
   native:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v7
       - uses: android-actions/setup-android@v4
@@ -157,7 +167,7 @@ jobs:
           bash scripts/build_whisper.sh
 
   license:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v7
       - name: Validate licensing split

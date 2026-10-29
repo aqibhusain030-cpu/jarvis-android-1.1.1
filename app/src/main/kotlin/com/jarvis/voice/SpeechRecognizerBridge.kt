@@ -16,6 +16,12 @@ class SpeechRecognizerBridge @Inject constructor(
 ) {
     @Volatile private var ready = false
 
+    /** True only when the approved STT asset exists and passes its SHA-256 check. */
+    fun isModelInstalled(): Boolean {
+        val asset = models.assetForFilename("stt", config.current.value.sttModel) ?: return false
+        return models.verify(asset).verified
+    }
+
     private fun ensureReady(): Boolean {
         if (ready) return true
         val modelName = config.current.value.sttModel
@@ -32,7 +38,10 @@ class SpeechRecognizerBridge @Inject constructor(
     }
 
     fun transcribe(pcm: ByteArray): String {
-        if (!ensureReady()) return ""
+        if (!ensureReady()) {
+            logger.w(TAG, "Local STT unavailable; transcript dropped")
+            return ""
+        }
         val lang = when (config.current.value.sttLanguage) {
             "auto", "" -> "auto"
             else -> config.current.value.sttLanguage

@@ -16,7 +16,7 @@ class SecurityPolicy @Inject constructor(private val config: ConfigRepository) {
         "send_sms", "make_call", "send_whatsapp", "send_email",
         "file_delete", "file_move", "file_write", "uninstall_app",
         "http_post", "install_apk", "type_text", "reply_notification",
-        "open_url", "http_get"
+        "open_url", "http_get", "security_capability"
     )
 
     private val communication = setOf(
@@ -60,7 +60,8 @@ class SecurityPolicy @Inject constructor(private val config: ConfigRepository) {
     }
 
     fun requiresPin(name: String): Boolean =
-        config.current.value.pinRequiredForHighRisk && name in dangerous
+        (config.current.value.pinRequiredForHighRisk && name in dangerous) ||
+            name == "security_capability"
 
     /**
      * Network policy: default-deny. Allow only when cloud fallback is enabled

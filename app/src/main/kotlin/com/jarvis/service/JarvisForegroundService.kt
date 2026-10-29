@@ -50,6 +50,8 @@ class JarvisForegroundService : LifecycleService() {
 
     private var wakeLock: PowerManager.WakeLock? = null
     private var watchdog: JarvisWatchdog? = null
+    private var voiceJob: Job? = null
+    private var confirmationJob: Job? = null
 
     override fun onCreate() {
         super.onCreate()
@@ -62,8 +64,6 @@ class JarvisForegroundService : LifecycleService() {
         acquireWakeLock()
         watchdog = JarvisWatchdog(lifecycleScope, this) { restartVoiceLoop() }
         watchdog?.start()
-        lifecycleScope.launch { confirmationInputLoop() }
-        lifecycleScope.launch { runVoiceLoop() }
         lifecycleScope.launch { goals.resumePersisted() }
         logger.i(TAG, "Foreground service started by explicit user action")
     }
@@ -71,11 +71,36 @@ class JarvisForegroundService : LifecycleService() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         super.onStartCommand(intent, flags, startId)
         when (intent?.action) {
-            ACTION_STOP -> { stopSelf(); return START_NOT_STICKY }
+            ACTION_STOP -> {
+                voiceJob?.cancel()
+                confirmationJob?.cancel()
+                stopSelf()
+                return START_NOT_STICKY
+            }
             ACTION_KILL -> {
                 confirmation.cancel()
                 killSwitch.kill()
-                stopSelf(); return START_NOT_STICKY
+                voiceJob?.cancel()
+                confirmationJob?.cancel()
+                stopSelf()
+                return START_NOT_STICKY
+            }
+            ACTION_START -> {
+                if (voiceJob?.isActive != true) {
+                    if (!stt.isModelInstalled()) {
+                        updateNotification("Speech model missing. Install it from the JARVIS home screen.")
+                        stopSelf()
+                        return START_NOT_STICKY
+                    }
+                    confirmationJob = lifecycleScope.launch { confirmationInputLoop() }
+                    voiceJob = lifecycleScope.launch { runManualVoiceLoop() }
+                }
+            }
+            ACTION_START_WAKEWORD -> {
+                if (voiceJob?.isActive != true) {
+                    confirmationJob = lifecycleScope.launch { confirmationInputLoop() }
+                    voiceJob = lifecycleScope.launch { runVoiceLoop() }
+                }
             }
         }
         return START_NOT_STICKY
@@ -84,6 +109,8 @@ class JarvisForegroundService : LifecycleService() {
     override fun onBind(intent: Intent): IBinder? = super.onBind(intent)
 
     override fun onDestroy() {
+        voiceJob?.cancel()
+        confirmationJob?.cancel()
         confirmation.cancel()
         watchdog?.stop()
         runCatching { audio.stop() }
@@ -92,6 +119,56 @@ class JarvisForegroundService : LifecycleService() {
         wakeLock?.let { if (it.isHeld) it.release() }
         wakeLock = null
         super.onDestroy()
+    }
+
+    /**
+     * The Start button is an explicit listen action, not an always-on wake-word
+     * promise. Capturing a command directly makes the app usable even when the
+     * optional wake-word ONNX assets have not been provisioned.
+     */
+    private suspend fun runManualVoiceLoop() = coroutineScope {
+        tts.speak("JARVIS is listening. Speak a command, then pause.")
+        while (isActive && !killSwitch.isKilled.value) {
+            try {
+                updateNotification("Listening for your command")
+                val pcm = vad.captureUtterance(audio)
+                watchdog?.beat()
+                if (pcm.isEmpty()) continue
+
+                updateNotification("Transcribing command")
+                val text = stt.transcribe(pcm).trim()
+                if (text.isBlank()) {
+                    tts.speak(getString(R.string.reply_didnt_catch))
+                    continue
+                }
+
+                if (config.current.value.killPhraseEnabled && killSwitch.isKillPhrase(text)) {
+                    confirmation.cancel()
+                    killSwitch.kill()
+                    updateNotification(getString(R.string.svc_killed))
+                    tts.speak(getString(R.string.reply_killed))
+                    stopSelf()
+                    break
+                }
+
+                memory.appendMessage("user", text, config.current.value.defaultLanguage)
+                updateNotification("Thinking")
+                val routed = runCatching { voiceRouter.execute(text) }.getOrNull()
+                val replyText = routed?.reply ?: brain.respond(text).text
+                val replyLanguage = config.current.value.defaultLanguage
+
+                updateNotification("Speaking")
+                tts.speak(replyText)
+                memory.appendMessage("assistant", replyText, replyLanguage)
+                watchdog?.beat()
+            } catch (ce: CancellationException) {
+                throw ce
+            } catch (t: Throwable) {
+                logger.e(TAG, "manual voice loop error", t)
+                updateNotification("Voice command failed: ${t.message ?: "check Logs"}")
+                delay(1000)
+            }
+        }
     }
 
     private suspend fun runVoiceLoop() = coroutineScope {
@@ -207,6 +284,7 @@ class JarvisForegroundService : LifecycleService() {
         const val NOTIF_ID = 1001
         const val ACTION_STOP = "com.jarvis.STOP"
         const val ACTION_START = "com.jarvis.START"
+        const val ACTION_START_WAKEWORD = "com.jarvis.START_WAKEWORD"
         const val ACTION_KILL = "com.jarvis.KILL"
         private const val CONFIRM_CAPTURE_TIMEOUT_MS = 8_000L
 

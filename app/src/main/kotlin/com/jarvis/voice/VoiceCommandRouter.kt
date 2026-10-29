@@ -52,7 +52,7 @@ class VoiceCommandRouter @Inject constructor(
         return if (lines.isEmpty()) {
             "Sir, the live news feed returned no readable headlines."
         } else {
-            "Sir, here are the latest headlines. " + lines.mapIndexed { i, line ->
+            "Sir, here is the latest news. " + lines.mapIndexed { i, line ->
                 "${i + 1}. $line."
             }.joinToString(" ")
         }

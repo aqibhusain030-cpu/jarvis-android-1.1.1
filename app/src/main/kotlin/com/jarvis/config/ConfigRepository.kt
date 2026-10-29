@@ -74,7 +74,11 @@ class ConfigRepository @Inject constructor(
             wakeThreshold = p[KEY_WAKE_TH] ?: 0.5f,
             vadSilenceMs = p[KEY_VAD] ?: 800,
             maxCommandSeconds = p[KEY_MAXCMD] ?: 20,
-            llmModel = p[KEY_LLM] ?: "Qwen2.5-3B-Instruct-Q4_K_M.gguf",
+            llmModel = (p[KEY_LLM] ?: "qwen2.5-3b-instruct-q4_k_m.gguf").let { configured ->
+            if (configured.equals("Qwen2.5-3B-Instruct-Q4_K_M.gguf", ignoreCase = true)) {
+                "qwen2.5-3b-instruct-q4_k_m.gguf"
+            } else configured
+        },
             llmContextSize = p[KEY_LLM_CTX] ?: 4096,
             llmThreads = p[KEY_LLM_THR] ?: 4,
             sttModel = p[KEY_STT] ?: "ggml-small.bin",

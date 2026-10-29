@@ -31,21 +31,21 @@ class SecurityLabBackend(
             )
         }
         return when (r.capabilityId) {
-        "security.scope.enroll" -> enroll(r)
-        "security.assess.app" -> assess(r)
-        "security.simulate.exploit" -> simulate(r)
-        "security.monitor.enable" -> enableMonitor(r)
-        "security.monitor.disable" -> {
-            monitor.disable()
-            CapabilityResult.Success(r.requestId, "Security monitoring disabled.")
-        }
-        "security.monitor.status" -> CapabilityResult.Success(
-            r.requestId,
-            if (monitor.enabled) "Security monitoring is enabled." else "Security monitoring is disabled.",
-            mapOf("enabled" to monitor.enabled.toString())
-        )
-        "security.monitor.events" -> events(r)
-        else -> CapabilityResult.Rejected(r.requestId, CapabilityResult.RejectionCode.UNKNOWN_CAPABILITY, "Unknown security capability.")
+            "security.scope.enroll" -> enroll(r)
+            "security.assess.app" -> assess(r)
+            "security.simulate.exploit" -> simulate(r)
+            "security.monitor.enable" -> enableMonitor(r)
+            "security.monitor.disable" -> {
+                monitor.disable()
+                CapabilityResult.Success(r.requestId, "Security monitoring disabled.")
+            }
+            "security.monitor.status" -> CapabilityResult.Success(
+                r.requestId,
+                if (monitor.enabled) "Security monitoring is enabled." else "Security monitoring is disabled.",
+                mapOf("enabled" to monitor.enabled.toString())
+            )
+            "security.monitor.events" -> events(r)
+            else -> CapabilityResult.Rejected(r.requestId, CapabilityResult.RejectionCode.UNKNOWN_CAPABILITY, "Unknown security capability.")
         }
     }
 
@@ -55,13 +55,29 @@ class SecurityLabBackend(
         if (target.isBlank() || expiry == null) return invalid(r)
         val authorized = r.arguments["authorized"]?.toBooleanStrictOrNull() == true
         val scope = SecurityScope(target = target, label = target, authorizedByUser = authorized, expiresAt = expiry)
-        return if (scopes.enroll(scope)) CapabilityResult.Success(r.requestId, "Security scope enrolled.", mapOf("scopeId" to scope.id, "target" to target))
-        else denied(r)
+        return if (scopes.enroll(scope)) {
+            CapabilityResult.Success(
+                r.requestId,
+                "Security scope enrolled.",
+                mapOf("scopeId" to scope.id, "target" to target)
+            )
+        } else {
+            denied(r)
+        }
     }
 
     private fun assess(r: CapabilityRequest): CapabilityResult {
         val target = r.arguments["target"]?.trim().takeUnless { it.isNullOrBlank() } ?: "local-app"
-        if (target != "local-app" && !scopes.isAuthorized(target)) return denied(r)
+        // Manifest assessment of the installed app is local-only. Remote targets
+        // must have a live, proof-verified scope granting this specific capability.
+        if (target != "local-app") {
+            val scopeId = r.arguments["scope_id"]?.trim().orEmpty()
+            if (scopeId.isBlank() ||
+                !scopes.isAuthorized(scopeId, target, "security.assess.app", SecurityRisk.R1_PASSIVE)
+            ) {
+                return denied(r)
+            }
+        }
         val result = assessment.assessManifest(
             target,
             r.arguments["cleartextDisabled"]?.toBooleanStrictOrNull() == true,
@@ -69,15 +85,38 @@ class SecurityLabBackend(
             r.arguments["accessibilityServiceExported"]?.toBooleanStrictOrNull() == true,
             r.arguments["excessivePackageVisibility"]?.toBooleanStrictOrNull() == true
         )
-        return CapabilityResult.Success(r.requestId, "Security assessment completed.", mapOf("target" to result.target, "score" to result.score.toString(), "findingCount" to result.findings.size.toString()))
+        return CapabilityResult.Success(
+            r.requestId,
+            "Security assessment completed.",
+            mapOf(
+                "target" to result.target,
+                "score" to result.score.toString(),
+                "findingCount" to result.findings.size.toString()
+            )
+        )
     }
 
     private fun simulate(r: CapabilityRequest): CapabilityResult {
+        val scopeId = r.arguments["scope_id"]?.trim().orEmpty()
         val target = r.arguments["target"]?.trim().orEmpty()
-        if (target.isBlank() || !scopes.isAuthorized(target)) return denied(r)
-        val scenario = runCatching { SimulatedScenario.valueOf(r.arguments["scenario"]?.uppercase().orEmpty()) }.getOrNull() ?: return invalid(r)
+        if (scopeId.isBlank() || target.isBlank() ||
+            !scopes.isAuthorized(scopeId, target, "security.simulate.exploit", SecurityRisk.R3_VALIDATION)
+        ) {
+            return denied(r)
+        }
+        val scenario = runCatching {
+            SimulatedScenario.valueOf(r.arguments["scenario"]?.uppercase().orEmpty())
+        }.getOrNull() ?: return invalid(r)
         val simulation = simulator.run(scenario, target)
-        return CapabilityResult.Success(r.requestId, "Exploit simulation completed without execution.", mapOf("target" to simulation.target, "scenario" to simulation.scenario.name, "blocked" to simulation.blocked.toString()))
+        return CapabilityResult.Success(
+            r.requestId,
+            "Exploit simulation completed without execution.",
+            mapOf(
+                "target" to simulation.target,
+                "scenario" to simulation.scenario.name,
+                "blocked" to simulation.blocked.toString()
+            )
+        )
     }
 
     private fun enableMonitor(r: CapabilityRequest): CapabilityResult {

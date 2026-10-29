@@ -36,7 +36,7 @@ object Defaults {
             maxCommandSeconds = i(voice, "max_command_seconds", 20),
             ttsSpeed = f(voice, "tts_speed", 1.0f),
             ttsPitch = f(voice, "tts_pitch", 1.0f),
-            llmModel = str(llm, "model", "Qwen2.5-3B-Instruct-Q4_K_M.gguf"),
+            llmModel = str(llm, "model", "qwen2.5-3b-instruct-q4_k_m.gguf"),
             llmContextSize = i(llm, "context_size", 4096),
             llmThreads = i(llm, "threads", 4),
             cloudFallbackEnabled = b(safety, "cloud_fallback_enabled", false),
