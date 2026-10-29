@@ -1,0 +1,64 @@
+{
+  "schema_version": 1,
+  "repository": "obra/superpowers",
+  "upstream_url": "https://github.com/obra/superpowers",
+  "version": "v7.0.1",
+  "tag": "v7.0.1",
+  "commit": "2ce8aa15d05bd57213e6f746f953aafb7ded7a8b",
+  "commit_url": "https://github.com/obra/superpowers/commit/2ce8aa15d05bd57213e6f746f953aafb7ded7a8b",
+  "license": "MIT",
+  "license_file": "third_party/licenses/SUPERPOWERS-MIT.txt",
+  "runtime_assets": false,
+  "apk_packaging": "Developer-only. All skill files live under .agents/skills, outside app/src/main/assets.",
+  "selection_reason": "Minimal development-only subset for test-first changes, evidence-based debugging, plan writing, and verification. Does not add runtime workflows or provider calls.",
+  "files": [
+    {
+      "local_path": ".agents/skills/test-driven-development/SKILL.md",
+      "source_path": "skills/test-driven-development/SKILL.md",
+      "source_url": "https://github.com/obra/superpowers/blob/2ce8aa15d05bd57213e6f746f953aafb7ded7a8b/skills/test-driven-development/SKILL.md",
+      "upstream_blob_sha": "46838cc9e893c06259e3bdad0fc2425b36242f15"
+    },
+    {
+      "local_path": ".agents/skills/test-driven-development/writing-good-tests.md",
+      "source_path": "skills/test-driven-development/writing-good-tests.md",
+      "source_url": "https://github.com/obra/superpowers/blob/2ce8aa15d05bd57213e6f746f953aafb7ded7a8b/skills/test-driven-development/writing-good-tests.md",
+      "upstream_blob_sha": "d3c4482fd30b4f9084bb61545fe73939a7502c28"
+    },
+    {
+      "local_path": ".agents/skills/systematic-debugging/SKILL.md",
+      "source_path": "skills/systematic-debugging/SKILL.md",
+      "source_url": "https://github.com/obra/superpowers/blob/2ce8aa15d05bd57213e6f746f953aafb7ded7a8b/skills/systematic-debugging/SKILL.md",
+      "upstream_blob_sha": "62fc752aaef59a8bbed5d305f4cadc60f8ae07ed"
+    },
+    {
+      "local_path": ".agents/skills/verification-before-completion/SKILL.md",
+      "source_path": "skills/verification-before-completion/SKILL.md",
+      "source_url": "https://github.com/obra/superpowers/blob/2ce8aa15d05bd57213e6f746f953aafb7ded7a8b/skills/verification-before-completion/SKILL.md",
+      "upstream_blob_sha": "7d45333cc4a49c57a80df6c1fe2fa777a207afbc"
+    },
+    {
+      "local_path": ".agents/skills/writing-plans/SKILL.md",
+      "source_path": "skills/writing-plans/SKILL.md",
+      "source_url": "https://github.com/obra/superpowers/blob/2ce8aa15d05bd57213e6f746f953aafb7ded7a8b/skills/writing-plans/SKILL.md",
+      "upstream_blob_sha": "4cf0275d88d67aa4ef09f4bbca9970ed6ff74a00"
+    },
+    {
+      "local_path": ".agents/skills/systematic-debugging/root-cause-tracing.md",
+      "source_path": "skills/systematic-debugging/root-cause-tracing.md",
+      "source_url": "https://github.com/obra/superpowers/blob/2ce8aa15d05bd57213e6f746f953aafb7ded7a8b/skills/systematic-debugging/root-cause-tracing.md",
+      "upstream_blob_sha": "0e72e8f9566b7ef85e814633d1feacad9d0c5868"
+    },
+    {
+      "local_path": ".agents/skills/systematic-debugging/defense-in-depth.md",
+      "source_path": "skills/systematic-debugging/defense-in-depth.md",
+      "source_url": "https://github.com/obra/superpowers/blob/2ce8aa15d05bd57213e6f746f953aafb7ded7a8b/skills/systematic-debugging/defense-in-depth.md",
+      "upstream_blob_sha": "e2483354dc2b62478a2624e34ca18bc0efe887b2"
+    },
+    {
+      "local_path": ".agents/skills/systematic-debugging/condition-based-waiting.md",
+      "source_path": "skills/systematic-debugging/condition-based-waiting.md",
+      "source_url": "https://github.com/obra/superpowers/blob/2ce8aa15d05bd57213e6f746f953aafb7ded7a8b/skills/systematic-debugging/condition-based-waiting.md",
+      "upstream_blob_sha": "70994f777c586f7d4c43033aac34c7cf0da6688b"
+    }
+  ]
+}

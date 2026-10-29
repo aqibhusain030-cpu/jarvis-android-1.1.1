@@ -31,6 +31,8 @@ jobs:
         run: |
           python tools/test_source_contracts.py
           python tools/test_native_apk_verifier.py
+      - name: Superpowers developer bundle integrity
+        run: python tools/test_superpowers_bundle.py
       - name: XML parse gate
         run: |
           python - <<'PY'
