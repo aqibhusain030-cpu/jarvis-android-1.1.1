@@ -102,7 +102,7 @@ jobs:
 
           # These toolchains are preinstalled on GitHub-hosted runners but are
           # not used by this Android/Java/Chaquopy workflow.
-          for path in /usr/share/dotnet /usr/local/share/boost /opt/ghc; do
+          for path in /usr/share/dotnet /usr/local/share/boost /opt/ghc /usr/share/swift; do
             if sudo test -d "$path"; then
               sudo du -sh "$path" || true
               sudo rm -rf "$path"
@@ -113,8 +113,8 @@ jobs:
           echo "Disk usage after cleanup:"
           df -h "$HOME" "$RUNNER_TEMP"
           available_mb="$(df -BM --output=avail "$HOME" | tail -n 1 | tr -cd '0-9')"
-          if [[ "$available_mb" -lt 5120 ]]; then
-            echo "::error::Only ${available_mb} MiB free before emulator setup; need at least 5120 MiB for the API 35 system image and a bounded userdata partition."
+          if [[ "$available_mb" -lt 13312 ]]; then
+            echo "::error::Only ${available_mb} MiB free before emulator setup; need at least 13312 MiB for the API 35 SDK image and userdata partition."
             exit 1
           fi
       - name: Enable KVM for instrumented tests
@@ -132,17 +132,11 @@ jobs:
           cores: 2
           ram-size: 4096M
           heap-size: 512M
-          # The hosted runner had only 4503 MiB free while the default AVD
-          # requested 7372 MiB for userdata. Bound userdata for CI tests.
-          disk-size: 3072M
+          # API 35 requires about 7373 MiB for userdata; reclaim runner space above.
+          disk-size: 6G
           emulator-options: -no-snapshot-save -no-snapshot-load -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none -no-metrics
           disable-animations: true
           emulator-boot-timeout: 900
-          # Replace the action-appended value so the AVD does not retain its larger default partition.
-          pre-emulator-launch-script: >-
-            sed -i '/^disk\.dataPartition\.size=/d' "$ANDROID_AVD_HOME/test.avd/config.ini" &&
-            printf 'disk.dataPartition.size=3072M\n' >> "$ANDROID_AVD_HOME/test.avd/config.ini" &&
-            test "$(grep -Fxc 'disk.dataPartition.size=3072M' "$ANDROID_AVD_HOME/test.avd/config.ini")" -eq 1
           script: ./gradlew :app:connectedDebugAndroidTest --no-daemon --stacktrace
       - name: Upload debug APK
         uses: actions/upload-artifact@v7
