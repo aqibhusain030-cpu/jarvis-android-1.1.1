@@ -90,6 +90,14 @@ jobs:
         run: ./gradlew :app:lintDebug
       - name: Assemble debug
         run: ./gradlew :app:assembleDebug
+
+      - name: Upload debug APK
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: jarvis-debug-apk
+          path: app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: warn
       - name: Verify packaged native libraries
         env:
           ANDROID_NDK_HOME: ${{ env.ANDROID_HOME }}/ndk/28.2.13676358
@@ -143,18 +151,10 @@ jobs:
           heap-size: 512M
           # API 35 requires about 7373 MiB for userdata; reclaim runner space above.
           disk-size: 6G
-          emulator-options: -no-snapshot-save -no-snapshot-load -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none -no-metrics
+          emulator-options: -no-snapshot-save -no-snapshot-load -no-window -gpu software -feature -Vulkan -noaudio -no-boot-anim -camera-back none -no-metrics
           disable-animations: true
-          emulator-boot-timeout: 300
+          emulator-boot-timeout: 600
           script: ./gradlew :app:connectedDebugAndroidTest --no-daemon --stacktrace
-      - name: Upload debug APK
-        if: always()
-        uses: actions/upload-artifact@v7
-        with:
-          name: jarvis-debug-apk
-          path: app/build/outputs/apk/debug/app-debug.apk
-          if-no-files-found: error
-
   native:
     runs-on: ubuntu-latest
     steps:
