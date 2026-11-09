@@ -51,9 +51,9 @@ class JarvisApplication : Application() {
             val nm = ctx.getSystemService(NotificationManager::class.java) ?: return
             nm.createNotificationChannel(
                 NotificationChannel(
-                    CH_FOREGROUND, "JARVIS Service",
+                    CH_FOREGROUND, "JARVIS Microphone Session",
                     NotificationManager.IMPORTANCE_LOW
-                ).apply { description = "Always-on wake-word listening" }
+                ).apply { description = "User-started voice interaction with microphone access" }
             )
             nm.createNotificationChannel(
                 NotificationChannel(CH_ALERTS, "JARVIS Alerts", NotificationManager.IMPORTANCE_HIGH)
