@@ -31,3 +31,11 @@ Large model files and native third-party source trees are not committed to this 
 ## Verification boundary
 
 Static parse, manifest, configuration, shell-syntax, secret-pattern and release-policy checks are performed during packaging. A full Gradle/NDK build, emulator/device execution, model inference test, live network integration test, and third-party malware reputation lookup are **not** claimed here because the release workflow is being generated under a static/no-execution requirement.
+
+
+## User-facing no-Termux path (native Android)
+
+- The Home screen now downloads the pinned Qwen 3B and Whisper Small models through the app's own ModelManager; the downloader verifies the immutable artifact SHA-256 before activation.
+- A foreground, one-utterance Talk now path is available after the models are installed. It uses Android microphone permission, the app's native VAD/Whisper/Llama/TTS chain, and stops after the reply. It does not require Termux or wake-word weights.
+- Continuous wake-word listening remains a separate optional mode. The upstream openWakeWord pretrained weights are CC BY-NC-SA 4.0, so they are not bundled or silently downloaded for a business-oriented build. A separately licensed, digest-verified model is required for that mode.
+- The microphone foreground service remains explicitly user-started. Android background-start restrictions mean this release does not claim to silently start microphone capture at boot.
