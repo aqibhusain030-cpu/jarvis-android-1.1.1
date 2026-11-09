@@ -15,6 +15,7 @@ android {
         applicationId = "com.jarvis"
         minSdk = 31
         targetSdk = 36
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         ndkVersion = "28.2.13676358"
         versionCode = 3
         versionName = "1.1.1"
