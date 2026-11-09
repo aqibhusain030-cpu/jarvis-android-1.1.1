@@ -20,7 +20,9 @@ import com.jarvis.R
 import com.jarvis.models.ModelManager
 import com.jarvis.security.KillSwitch
 import com.jarvis.service.JarvisForegroundService
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -34,10 +36,17 @@ fun HomeScreen(nav: NavController, killSwitch: KillSwitch, modelManager: ModelMa
     var downloading by remember { mutableStateOf(false) }
     var downloadProgress by remember { mutableFloatStateOf(0f) }
     var downloadError by remember { mutableStateOf("") }
-    var modelsReady by remember {
-        mutableStateOf(requiredModels.isNotEmpty() && requiredModels.all(modelManager::isPresent))
-    }
+    var modelsReady by remember { mutableStateOf(false) }
+    var modelsChecked by remember { mutableStateOf(false) }
     val killed by killSwitch.isKilled.collectAsState()
+
+    // SHA-256 checks read multi-gigabyte model files; keep them off the main thread.
+    LaunchedEffect(modelManager) {
+        modelsReady = withContext(Dispatchers.IO) {
+            requiredModels.isNotEmpty() && requiredModels.all(modelManager::isPresent)
+        }
+        modelsChecked = true
+    }
 
     val micPermissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
