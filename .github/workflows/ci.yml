@@ -146,7 +146,24 @@ jobs:
           emulator-options: -no-snapshot-save -no-snapshot-load -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none -no-metrics
           disable-animations: true
           emulator-boot-timeout: 300
-          script: ./gradlew :app:connectedDebugAndroidTest --no-daemon --stacktrace
+          script: |
+            set +e
+            ./gradlew :app:connectedDebugAndroidTest --no-daemon --stacktrace
+            test_status=$?
+            mkdir -p build/diagnostics
+            adb logcat -d -v threadtime > build/diagnostics/emulator-logcat.txt 2>&1 || true
+            adb shell dumpsys activity processes > build/diagnostics/activity-processes.txt 2>&1 || true
+            adb shell dumpsys package com.jarvis > build/diagnostics/target-package.txt 2>&1 || true
+            adb shell dumpsys package com.jarvis.test > build/diagnostics/test-package.txt 2>&1 || true
+            exit "$test_status"
+      - name: Upload emulator diagnostics
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: jarvis-emulator-diagnostics
+          path: build/diagnostics/
+          if-no-files-found: ignore
+          retention-days: 14
       - name: Upload debug APK
         if: always()
         uses: actions/upload-artifact@v7
