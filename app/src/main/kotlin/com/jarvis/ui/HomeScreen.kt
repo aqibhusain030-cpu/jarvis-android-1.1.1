@@ -82,15 +82,20 @@ fun HomeScreen(nav: NavController, killSwitch: KillSwitch, modelManager: ModelMa
             var failedName: String? = null
 
             for (entry in requiredModels) {
-                if (modelManager.isPresent(entry)) {
+                val alreadyInstalled = withContext(Dispatchers.IO) { modelManager.isPresent(entry) }
+                if (alreadyInstalled) {
                     completedBytes += entry.sizeBytes
                     downloadProgress = completedBytes.toFloat() / totalBytes
                     continue
                 }
                 val alreadyDownloaded = completedBytes
-                val file = modelManager.download(entry.id) { current, _ ->
-                    val ratio = ((alreadyDownloaded + current).toFloat() / totalBytes).coerceIn(0f, 1f)
-                    scope.launch { downloadProgress = ratio }
+                var lastReportedBytes = 0L
+                val file = modelManager.download(entry.id) { current, total ->
+                    if (current - lastReportedBytes >= 8L * 1024L * 1024L || current >= total) {
+                        lastReportedBytes = current
+                        val ratio = ((alreadyDownloaded + current).toFloat() / totalBytes).coerceIn(0f, 1f)
+                        scope.launch { downloadProgress = ratio }
+                    }
                 }
                 if (file == null) {
                     failedName = entry.filename
@@ -100,7 +105,10 @@ fun HomeScreen(nav: NavController, killSwitch: KillSwitch, modelManager: ModelMa
                 downloadProgress = (completedBytes.toFloat() / totalBytes).coerceIn(0f, 1f)
             }
 
-            modelsReady = requiredModels.isNotEmpty() && requiredModels.all(modelManager::isPresent)
+            modelsReady = withContext(Dispatchers.IO) {
+                requiredModels.isNotEmpty() && requiredModels.all(modelManager::isPresent)
+            }
+            modelsChecked = true
             downloading = false
             if (modelsReady) {
                 downloadProgress = 1f
@@ -130,7 +138,11 @@ fun HomeScreen(nav: NavController, killSwitch: KillSwitch, modelManager: ModelMa
                 style = MaterialTheme.typography.titleLarge
             )
             Text(
-                text = if (modelsReady) "On-device AI models verified" else "On-device models not installed",
+                text = when {
+                    !modelsChecked -> "Checking installed model files…"
+                    modelsReady -> "On-device AI models verified"
+                    else -> "On-device models not installed"
+                },
                 style = MaterialTheme.typography.bodyMedium,
                 color = if (modelsReady) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
             )
@@ -146,8 +158,14 @@ fun HomeScreen(nav: NavController, killSwitch: KillSwitch, modelManager: ModelMa
                 if (downloadError.isNotBlank()) {
                     Text(downloadError, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
                 }
-                Button(onClick = { downloadOfflineModels() }, enabled = !downloading && !killed) {
-                    Text(if (downloading) "Downloading models…" else "Download offline models")
+                Button(onClick = { downloadOfflineModels() }, enabled = modelsChecked && !downloading && !killed) {
+                    Text(
+                        when {
+                            !modelsChecked -> "Checking models…"
+                            downloading -> "Downloading models…"
+                            else -> "Download offline models"
+                        }
+                    )
                 }
             } else {
                 Button(onClick = { startTalkNow() }, enabled = !killed && !downloading) {
