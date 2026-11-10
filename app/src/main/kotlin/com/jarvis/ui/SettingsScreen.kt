@@ -52,9 +52,15 @@ fun SettingsScreen(nav: NavController, killSwitch: KillSwitch, unlock: SecurityU
                 activity?.let { unlock.authenticate(it) { ok -> unlocked = ok } }
             }) { Text(stringResource(R.string.action_unlock_high_risk)) }
             Text(if (unlocked) stringResource(R.string.high_risk_unlocked) else stringResource(R.string.high_risk_locked))
-            Button(onClick = {
-                if (!killed) JarvisForegroundService.start(ctx)
-            }, enabled = !killed) { Text(stringResource(R.string.action_start)) }
+            Button(
+                onClick = {
+                    if (!killed) {
+                        val started = JarvisForegroundService.startOneShot(ctx)
+                        if (!started) unlocked = false
+                    }
+                },
+                enabled = !killed && !JarvisForegroundService.isRunning()
+            ) { Text("Talk now") }
         }
     }
 }

@@ -19,7 +19,9 @@ fun OnboardingScreen(onDone: () -> Unit) {
     var step by remember { mutableIntStateOf(0) }
     val permsLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
-    ) { step = 3 }
+    ) { results ->
+        step = if (results[Manifest.permission.RECORD_AUDIO] == true) 3 else 2
+    }
 
     Scaffold { pad ->
         Column(

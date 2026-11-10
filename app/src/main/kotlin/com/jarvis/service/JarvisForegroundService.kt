@@ -49,6 +49,7 @@ class JarvisForegroundService : LifecycleService() {
 
     private var wakeLock: PowerManager.WakeLock? = null
     private var watchdog: JarvisWatchdog? = null
+    private var voiceLoopStarted = false
 
     override fun onCreate() {
         super.onCreate()
@@ -58,13 +59,10 @@ class JarvisForegroundService : LifecycleService() {
             return
         }
         startForeground(NOTIF_ID, buildNotification(getString(R.string.svc_idle)))
+        serviceRunning = true
         acquireWakeLock()
         watchdog = JarvisWatchdog(lifecycleScope, this) { restartVoiceLoop() }
-        watchdog?.start()
-        lifecycleScope.launch { confirmationInputLoop() }
-        lifecycleScope.launch { runVoiceLoop() }
-        lifecycleScope.launch { goals.resumePersisted() }
-        logger.i(TAG, "Foreground service started by explicit user action")
+        logger.i(TAG, "Foreground service created; waiting for its explicit start action")
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -75,6 +73,21 @@ class JarvisForegroundService : LifecycleService() {
                 confirmation.cancel()
                 killSwitch.kill()
                 stopSelf(); return START_NOT_STICKY
+            }
+        }
+
+        if (!voiceLoopStarted) {
+            voiceLoopStarted = true
+            val oneShot = intent?.action == ACTION_TALK_ONCE
+            lifecycleScope.launch {
+                launch { confirmationInputLoop() }
+                if (oneShot) {
+                    runOneShotVoiceCommand()
+                } else {
+                    watchdog?.start()
+                    launch { goals.resumePersisted() }
+                    runVoiceLoop()
+                }
             }
         }
         return START_NOT_STICKY
@@ -90,7 +103,50 @@ class JarvisForegroundService : LifecycleService() {
         runCatching { stt.close() }
         wakeLock?.let { if (it.isHeld) it.release() }
         wakeLock = null
+        serviceRunning = false
         super.onDestroy()
+    }
+
+    /**
+     * Foreground, one-utterance mode. It is deliberately tap-to-talk and does
+     * not depend on a wake-word model. The service stops after the response.
+     */
+    private suspend fun runOneShotVoiceCommand() {
+        try {
+            updateNotification(getString(R.string.svc_listening))
+            val pcm = vad.captureUtterance(audio)
+            if (pcm.isEmpty()) {
+                tts.speak(getString(R.string.reply_didnt_catch))
+                return
+            }
+            updateNotification(getString(R.string.svc_thinking))
+            val text = stt.transcribe(pcm).trim()
+            if (text.isBlank()) {
+                tts.speak(getString(R.string.reply_didnt_catch))
+                return
+            }
+            if (config.current.value.killPhraseEnabled && killSwitch.isKillPhrase(text)) {
+                confirmation.cancel()
+                killSwitch.kill()
+                updateNotification(getString(R.string.svc_killed))
+                tts.speak(getString(R.string.reply_killed))
+                return
+            }
+            memory.appendMessage("user", text, config.current.value.defaultLanguage)
+            val reply = brain.respond(text)
+            updateNotification(getString(R.string.svc_speaking))
+            tts.speak(reply.text)
+            memory.appendMessage("assistant", reply.text, reply.language)
+            watchdog?.beat()
+        } catch (ce: CancellationException) {
+            throw ce
+        } catch (t: Throwable) {
+            logger.e(TAG, "one-shot voice command failed", t)
+            runCatching { tts.speak(getString(R.string.reply_error)) }
+        } finally {
+            runCatching { audio.stop() }
+            stopSelf()
+        }
     }
 
     private suspend fun runVoiceLoop() = coroutineScope {
@@ -202,6 +258,10 @@ class JarvisForegroundService : LifecycleService() {
         const val NOTIF_ID = 1001
         const val ACTION_STOP = "com.jarvis.STOP"
         const val ACTION_START = "com.jarvis.START"
+        const val ACTION_TALK_ONCE = "com.jarvis.TALK_ONCE"
+        @Volatile private var serviceRunning = false
+
+        fun isRunning(): Boolean = serviceRunning
         const val ACTION_KILL = "com.jarvis.KILL"
         private const val CONFIRM_CAPTURE_TIMEOUT_MS = 8_000L
 
@@ -210,6 +270,16 @@ class JarvisForegroundService : LifecycleService() {
             if (ContextCompat.checkSelfPermission(ctx, Manifest.permission.RECORD_AUDIO) !=
                 PackageManager.PERMISSION_GRANTED) return false
             val i = Intent(ctx, JarvisForegroundService::class.java).setAction(ACTION_START)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) ctx.startForegroundService(i)
+            else ctx.startService(i)
+            return true
+        }
+
+        /** Starts one user-triggered voice command without loading a wake-word model. */
+        fun startOneShot(ctx: Context): Boolean {
+            if (ContextCompat.checkSelfPermission(ctx, Manifest.permission.RECORD_AUDIO) !=
+                PackageManager.PERMISSION_GRANTED || serviceRunning) return false
+            val i = Intent(ctx, JarvisForegroundService::class.java).setAction(ACTION_TALK_ONCE)
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) ctx.startForegroundService(i)
             else ctx.startService(i)
             return true
