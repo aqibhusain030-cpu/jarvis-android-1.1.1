@@ -80,6 +80,21 @@ bash scripts/sign_release.sh
 High-risk tools (SMS, call, HTTP, …) require voice confirmation and are rate-limited.
 `screenshot` returns a truthful `needs_media_projection` error until the user grants MediaProjection.
 
+## SUPER FRIDAY v3.0 MAX (companion brain)
+
+A workstation-class FRIDAY assistant ships alongside this app, in two interchangeable forms:
+self-contained `super_friday_max.py` and the modular `friday_ultra/` package. LangGraph tool
+chaining, a 7-agent CrewAI swarm, ChromaDB long-term memory, voice, Gradio dashboard, Telegram bot,
+and 37 tools — see [docs/SUPER_FRIDAY.md](docs/SUPER_FRIDAY.md).
+
+```bash
+pip install -r requirements.txt
+cp .env.example .env      # add OPENAI_API_KEY
+python3 super_friday_max.py --self-test
+python3 super_friday_max.py              # Rich CLI
+python3 -m friday_ultra --web            # modular + Gradio dashboard
+```
+
 ## Privacy
 
 Every AI inference, memory read/write, and voice operation runs on-device.

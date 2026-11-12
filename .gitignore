@@ -28,3 +28,11 @@ app/src/main/assets/models/*.onnx.sha256
 # Kotlin model-management source is tracked; only runtime model data is ignored.
 !app/src/main/kotlin/com/jarvis/models/
 !app/src/main/kotlin/com/jarvis/models/**
+
+# SUPER FRIDAY runtime secrets and persistent local state
+.env
+.venv/
+friday_data/
+friday_ultra/data/*
+!friday_ultra/data/.gitkeep
+
