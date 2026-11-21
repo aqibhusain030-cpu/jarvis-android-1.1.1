@@ -17,7 +17,7 @@ data class ModelEntry(
 data class ModelManifest(val models: List<ModelEntry>) {
     companion object {
         // Qwen2.5-3B-Instruct-Q4_K_M from the Hugging Face file listing.
-        // Whisper small ggml-small.bin from whisper.cpp model listing.
+        // Whisper small is a multilingual model; language is auto-detected per utterance.
         // The wake-word model is intentionally NOT in the automatic catalog:
         // its upstream release currently does not expose a cryptographic asset digest.
         val DEFAULT = ModelManifest(
@@ -44,7 +44,7 @@ data class ModelManifest(val models: List<ModelEntry>) {
                     backend = "whisper.cpp",
                     precision = "fp32",
                     compression = "none",
-                    capabilities = listOf("speech-to-text", "hi", "en")
+                    capabilities = listOf("speech-to-text", "hi", "en", "ar", "auto-language-detection")
                 )
             )
         )
