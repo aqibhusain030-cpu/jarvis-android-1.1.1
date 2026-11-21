@@ -1,14 +1,18 @@
-"""Language detection for Hindi, English, and code-switched Hinglish."""
+"""Language detection for Hindi, English, Hinglish, and Arabic."""
 import re
 
 _DEV = re.compile(r"[\u0900-\u097F]")
 _LAT = re.compile(r"[A-Za-z]")
+_AR = re.compile(r"[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]")
 
 
 def detect_language(text: str) -> str:
     if not text.strip():
         return "hi"
-    dev = len(_DEV.findall(text)); lat = len(_LAT.findall(text))
+    if _AR.search(text):
+        return "ar"
+    dev = len(_DEV.findall(text))
+    lat = len(_LAT.findall(text))
     total = dev + lat or 1
     ratio = dev / total
     if dev == 0 and lat > 0:
@@ -25,4 +29,5 @@ def style_for(lang: str) -> str:
         "hi": "respectful Hindi, address the user as 'सर', use 'जी' and 'कृपया'",
         "en": "polite English, address the user as 'Sir'",
         "hinglish": "natural Hinglish, mixing Hindi grammar with English technical terms",
-    }[lang]
+        "ar": "clear, polite Modern Standard Arabic, address the user as 'سيدي'",
+    }.get(lang, "polite English, address the user as 'Sir'")
