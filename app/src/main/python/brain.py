@@ -125,11 +125,13 @@ def respond(payload_json: str) -> str:
     payload = json.loads(payload_json)
     text = payload.get("userText", "")
     lang = payload.get("detectedLanguage") or detect_language(text)
+    if lang not in ("hi", "en", "hinglish", "ar"):
+        lang = detect_language(text)
     history = payload.get("recentMessages", [])[-8:]
 
     _mem.remember_message("user", text, lang)
 
-    system = load_prompt(f"system_{lang if lang in ('hi', 'en', 'hinglish') else 'hi'}")
+    system = load_prompt(f"system_{lang}")
     context = _mem.build_context_block(text)
     tools = _tool_block()
 
@@ -151,12 +153,10 @@ def respond(payload_json: str) -> str:
             break
         calls = _parse_tool_calls(reply_text)
         if not calls:
-            # Strip any residual tool fences from final answer
             clean = _TOOL_CALL_RE.sub("", reply_text)
             clean = _TOOL_CALL_RE2.sub("", clean).strip()
             reply_text = clean or reply_text
             break
-        # Execute tools and continue
         results = []
         for c in calls:
             args = c.get("args") or {}
@@ -198,18 +198,23 @@ def plan_goal(title: str, description: str) -> str:
 def _fallback(lang: str, user_text: str = "") -> str:
     """Rule-based fallback when LLM is unavailable — still useful for demos."""
     t = (user_text or "").lower()
-    # Minimal offline intents
-    if any(k in t for k in ("battery", "बैटरी", "बैटरी")):
+    if any(k in t for k in ("battery", "बैटरी")):
+        if lang == "ar":
+            return "سيدي، أحتاج إلى تحميل النموذج المحلي والأدوات للتحقق من حالة البطارية."
         return (
             "सर, बैटरी की जानकारी के लिए मुझे tool चाहिए — कृपया LLM मॉडल लोड करें।"
             if lang != "en"
             else "Sir, battery status needs the local model and tools loaded."
         )
-    if any(k in t for k in ("time", "टाइम", "समय", "समय क्या")):
+    if any(k in t for k in ("time", "टाइम", "समय", "الوقت", "كم الساعة")):
         from datetime import datetime
 
         now = datetime.now().strftime("%I:%M %p, %A")
+        if lang == "ar":
+            return f"سيدي، الوقت الآن تقريباً {now}."
         return f"सर, अभी लगभग {now} है।" if lang != "en" else f"Sir, it is about {now}."
+    if lang == "ar":
+        return "عذراً سيدي، نموذج اللغة المحلي غير محمّل بعد. يرجى تنزيل النموذج من الإعدادات ثم المحاولة مرة أخرى."
     if lang == "en":
         return (
             "Sir, the on-device language model is not loaded yet. "

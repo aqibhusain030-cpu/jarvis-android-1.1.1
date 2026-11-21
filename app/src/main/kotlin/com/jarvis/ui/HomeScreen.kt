@@ -38,13 +38,22 @@ fun HomeScreen(nav: NavController, killSwitch: KillSwitch, modelManager: ModelMa
     var downloadError by remember { mutableStateOf("") }
     var modelsReady by remember { mutableStateOf(false) }
     var modelsChecked by remember { mutableStateOf(false) }
+    var whisperReady by remember { mutableStateOf(false) }
+    var whisperChecked by remember { mutableStateOf(false) }
+    var whisperDownloading by remember { mutableStateOf(false) }
+    var whisperProgress by remember { mutableFloatStateOf(0f) }
+    var whisperError by remember { mutableStateOf("") }
     val killed by killSwitch.isKilled.collectAsState()
 
-    // SHA-256 checks read multi-gigabyte model files; keep them off the main thread.
     LaunchedEffect(modelManager) {
-        modelsReady = withContext(Dispatchers.IO) {
-            requiredModels.isNotEmpty() && requiredModels.all(modelManager::isPresent)
+        val result = withContext(Dispatchers.IO) {
+            val stt = modelManager.entry("whisper-small")?.let(modelManager::isPresent) == true
+            val all = requiredModels.isNotEmpty() && requiredModels.all(modelManager::isPresent)
+            stt to all
         }
+        whisperReady = result.first
+        modelsReady = result.second
+        whisperChecked = true
         modelsChecked = true
     }
 
@@ -77,6 +86,29 @@ fun HomeScreen(nav: NavController, killSwitch: KillSwitch, modelManager: ModelMa
             }
         } else {
             micPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+        }
+    }
+
+    fun downloadSpeechModel() {
+        if (whisperDownloading || whisperReady) return
+        whisperDownloading = true
+        whisperProgress = 0f
+        whisperError = ""
+        scope.launch {
+            val file = modelManager.download("whisper-small") { current, total ->
+                if (total > 0L) {\n                    val ratio = (current.toFloat() / total).coerceIn(0f, 1f)\n                    scope.launch { whisperProgress = ratio }\n                }
+            }
+            whisperReady = withContext(Dispatchers.IO) {
+                val entry = modelManager.entry("whisper-small")
+                entry != null && file != null && modelManager.isPresent(entry)
+            }
+            whisperDownloading = false
+            if (whisperReady) {
+                whisperProgress = 1f
+                status = "Whisper speech model verified. Standalone transcription is ready."
+            } else {
+                whisperError = "Whisper download or SHA-256 verification failed. Retry on a stable connection."
+            }
         }
     }
 
@@ -114,10 +146,15 @@ fun HomeScreen(nav: NavController, killSwitch: KillSwitch, modelManager: ModelMa
                 downloadProgress = (completedBytes.toFloat() / totalBytes).coerceIn(0f, 1f)
             }
 
-            modelsReady = withContext(Dispatchers.IO) {
-                requiredModels.isNotEmpty() && requiredModels.all(modelManager::isPresent)
+            val result = withContext(Dispatchers.IO) {
+                val stt = modelManager.entry("whisper-small")?.let(modelManager::isPresent) == true
+                val all = requiredModels.isNotEmpty() && requiredModels.all(modelManager::isPresent)
+                stt to all
             }
+            whisperReady = result.first
+            modelsReady = result.second
             modelsChecked = true
+            whisperChecked = true
             downloading = false
             if (modelsReady) {
                 downloadProgress = 1f
@@ -148,16 +185,16 @@ fun HomeScreen(nav: NavController, killSwitch: KillSwitch, modelManager: ModelMa
             )
             Text(
                 text = when {
-                    !modelsChecked -> "Checking installed model files…"
+                    !modelsChecked -> "Checking installed AI models…"
                     modelsReady -> "On-device AI models verified"
-                    else -> "On-device models not installed"
+                    else -> "Full assistant models not installed"
                 },
                 style = MaterialTheme.typography.bodyMedium,
                 color = if (modelsReady) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
             )
             if (!modelsReady) {
                 Text(
-                    "Download Qwen 3B and Whisper Small once (about 2.5 GB). The app stores and verifies them itself — no Termux required. Use Wi-Fi and keep sufficient free storage.",
+                    "The full assistant needs Qwen 3B and Whisper Small (about 2.5 GB total).",
                     style = MaterialTheme.typography.bodySmall
                 )
                 if (downloading) {
@@ -168,13 +205,7 @@ fun HomeScreen(nav: NavController, killSwitch: KillSwitch, modelManager: ModelMa
                     Text(downloadError, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
                 }
                 Button(onClick = { downloadOfflineModels() }, enabled = modelsChecked && !downloading && !killed) {
-                    Text(
-                        when {
-                            !modelsChecked -> "Checking models…"
-                            downloading -> "Downloading models…"
-                            else -> "Download offline models"
-                        }
-                    )
+                    Text(if (downloading) "Downloading assistant models…" else "Download full assistant models")
                 }
             } else {
                 Button(onClick = { startTalkNow() }, enabled = !killed && !downloading) {
@@ -183,12 +214,47 @@ fun HomeScreen(nav: NavController, killSwitch: KillSwitch, modelManager: ModelMa
                     Text("Talk now")
                 }
                 Text(
-                    "Tap once, speak, and JARVIS will transcribe locally, reason on-device, and reply aloud. The microphone session stops after the command.",
+                    "Tap once, speak, and JARVIS will transcribe locally, reason on-device, and reply aloud.",
                     style = MaterialTheme.typography.bodySmall
                 )
             }
+
             Text(
-                "Always-on wake-word listening is separate and requires a correctly licensed, verified wake-word model. This build does not silently install non-commercial model weights.",
+                text = if (whisperReady) "Whisper multilingual speech model verified" else "Whisper speech model not installed",
+                style = MaterialTheme.typography.bodyMedium,
+                color = if (whisperReady) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
+            )
+            if (!whisperReady) {
+                if (whisperDownloading) {
+                    LinearProgressIndicator(progress = { whisperProgress }, modifier = Modifier.fillMaxWidth())
+                    Text("${(whisperProgress * 100).toInt()}% of speech model downloaded", style = MaterialTheme.typography.labelSmall)
+                }
+                if (whisperError.isNotBlank()) {
+                    Text(whisperError, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+                }
+                OutlinedButton(
+                    onClick = { downloadSpeechModel() },
+                    enabled = whisperChecked && !whisperDownloading && !killed,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(if (whisperDownloading) "Downloading Whisper…" else "Download speech model only (~488 MB)")
+                }
+            }
+            OutlinedButton(
+                onClick = { nav.navigate("transcribe") },
+                enabled = whisperReady && !killed && !whisperDownloading,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Icon(Icons.Default.RecordVoiceOver, contentDescription = null)
+                Spacer(Modifier.width(8.dp))
+                Text("Standalone speech recognition")
+            }
+            Text(
+                "Automatic Hindi, English and Arabic transcription. This test uses the phone microphone and Whisper locally; it does not call Android SpeechRecognizer, keyboard dictation, cloud services, the LLM or TTS.",
+                style = MaterialTheme.typography.bodySmall
+            )
+            Text(
+                "Always-on wake-word listening is separate and requires a correctly licensed, verified wake-word model.",
                 style = MaterialTheme.typography.bodySmall
             )
             OutlinedButton(onClick = { nav.navigate("settings") }) { Text("Settings & service controls") }

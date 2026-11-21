@@ -37,15 +37,17 @@ class BrainBridge @Inject constructor(
         val lessons = memory.relevantLessons(userText, limit = 5).map {
             "lesson: tool=" + it.tool + "; error=" + it.errorCode + "; correction=" + it.correction + "; confidence=" + it.confidence
         }
+        val detectedCode = when (detected) {
+            LanguageDetector.Lang.HI -> "hi"
+            LanguageDetector.Lang.EN -> "en"
+            LanguageDetector.Lang.HINGLISH -> "hinglish"
+            LanguageDetector.Lang.AR -> "ar"
+        }
         val payload = json.encodeToString(
             ContextEnvelope.serializer(),
             ContextEnvelope(
                 userText = userText,
-                detectedLanguage = when (detected) {
-                    LanguageDetector.Lang.HI -> "hi"
-                    LanguageDetector.Lang.EN -> "en"
-                    LanguageDetector.Lang.HINGLISH -> "hinglish"
-                },
+                detectedLanguage = detectedCode,
                 recentMessages = context,
                 lessons = lessons
             )
@@ -55,22 +57,25 @@ class BrainBridge @Inject constructor(
             if (out.isBlank()) {
                 BrainReply(
                     text = fallback(detected),
-                    language = if (detected == LanguageDetector.Lang.EN) "en" else "hi"
+                    language = detectedCode
                 )
             } else {
                 json.decodeFromString(BrainReply.serializer(), out)
             }
         } catch (t: Throwable) {
             logger.e(TAG, "brain.respond failed", t)
-            BrainReply(text = fallback(detected), language = "hi")
+            BrainReply(text = fallback(detected), language = detectedCode)
         }
     }
 
-    private fun fallback(lang: LanguageDetector.Lang): String =
-        if (lang == LanguageDetector.Lang.EN)
+    private fun fallback(lang: LanguageDetector.Lang): String = when (lang) {
+        LanguageDetector.Lang.EN ->
             "Sir, I'm having trouble thinking clearly right now. Please try again."
-        else
+        LanguageDetector.Lang.AR ->
+            "عذراً سيدي، أواجه مشكلة في معالجة طلبك الآن. يرجى المحاولة مرة أخرى."
+        else ->
             "क्षमा करें सर, मैं अभी उत्तर नहीं दे पा रहा।"
+    }
 
     @Serializable
     data class ContextEnvelope(

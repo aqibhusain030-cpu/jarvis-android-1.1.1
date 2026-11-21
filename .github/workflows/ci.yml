@@ -22,6 +22,8 @@ jobs:
           python-version: '3.12'
       - name: Python syntax
         run: python -m compileall -q app/src/main/python
+      - name: Multilingual ASR language tests
+        run: python tools/test_multilingual_asr.py
       - name: Shell syntax
         run: |
           find scripts tools -type f -name '*.sh' -print0 | xargs -0 -r -n1 bash -n
