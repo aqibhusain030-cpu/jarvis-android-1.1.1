@@ -41,5 +41,6 @@ private fun JarvisNav(killSwitch: KillSwitch, securityUnlock: SecurityUnlockMana
         composable("goals") { GoalsScreen(nav) }
         composable("memory") { MemoryScreen(nav) }
         composable("logs") { LogsScreen(nav) }
+        composable("transcribe") { TranscriptionScreen(nav) }
     }
 }
