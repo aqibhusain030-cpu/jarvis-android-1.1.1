@@ -50,7 +50,7 @@ object ConfigSchemaValidator {
 
         requireString(agent, "name", 1, 32)
         requireString(agent, "user_name", 1, 64)
-        requireOneOf(agent, "default_language", setOf("hi", "en", "hinglish"))
+        requireOneOf(agent, "default_language", setOf("hi", "en", "hinglish", "ar"))
         requireBoolean(agent, "auto_language_detect")
         requireOneOf(agent, "address_style", setOf("respectful", "neutral"))
         requireIntRange(agent, "max_tool_rounds", 1, 8)
@@ -76,7 +76,7 @@ object ConfigSchemaValidator {
 
         requireOneOf(stt, "provider", setOf("local"))
         requireString(stt, "model", 1, 256)
-        requireOneOf(stt, "language", setOf("auto", "hi", "en"))
+        requireOneOf(stt, "language", setOf("auto", "hi", "en", "ar"))
         requireIntRange(stt, "threads", 1, 32)
 
         requireBoolean(autonomy, "enabled")
