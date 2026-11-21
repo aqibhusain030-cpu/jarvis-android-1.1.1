@@ -1,20 +1,21 @@
 # JARVIS — Android On-Device Voice Assistant
 
-Fully offline-first, trilingual (Hindi / English / Hinglish) on-device AI
-assistant for Android 12+. Runs as a real APK. No Termux. No mandatory cloud.
+Fully offline-first, multilingual (Hindi / English / Arabic, including common code-switching) on-device AI assistant for Android 12+. Runs as a real APK. No Termux. No mandatory cloud.
 
 ## What it does
 
-- User-started always-listening wake word ("Hey JARVIS") via a microphone Foreground Service.
-- Speech in Hindi, English, or code-switched Hinglish — answered in kind.
-- On-device LLM (llama.cpp / Qwen2.5) and STT (whisper.cpp / ggml-small).
+- User-started microphone foreground service for voice commands.
+- Offline speech recognition through whisper.cpp, using the multilingual `ggml-small.bin` model with automatic per-utterance language detection.
+- Dedicated **Standalone speech recognition** screen: records a complete utterance, waits for silence, displays the transcript and detected language, and lets the user copy it. This path does not call Android SpeechRecognizer, keyboard dictation, the LLM, TTS, or any cloud endpoint.
+- Hindi, English and Arabic transcript classification; mixed Arabic-English and Hindi-English transcripts retain their original scripts.
+- On-device LLM (llama.cpp / Qwen2.5) for assistant replies.
 - 26 phone-control tools (SMS, calls, camera, files, notifications, weather…).
 - Autonomous goals that run for minutes, hours, or days.
 - Persistent memory across reboots. Full audit log. Kill switch.
 
 ## Requirements
 
-- Android 12 (API 31) minimum, Android 14 (API 34) target.
+- Android 12 (API 31) minimum, Android SDK 36 target.
 - arm64-v8a device with ≥ 8 GB RAM (12 GB recommended).
 - ~4 GB free storage (LLM + STT + wake word models).
 - JDK 17, Android Studio Hedgehog+, NDK 28.2.13676358, CMake 3.22+, Python 3.10, git, curl.
@@ -56,8 +57,12 @@ bash scripts/install_debug.sh
 ## First run
 
 1. Launch JARVIS.
-2. Complete onboarding (language → permissions → models → voice → wake word → safety).
-3. Say "Hey JARVIS", then "टाइम क्या है?" or "What's the battery level?".
+2. Complete onboarding and grant microphone permission when requested.
+3. On Home, download **Whisper speech model only (~488 MB)** to use standalone transcription without downloading Qwen.
+4. Open **Standalone speech recognition**, tap **Start recording**, speak a complete sentence, then pause naturally. VAD ends the recording after sustained silence; the Whisper model transcribes locally.
+5. To use the full assistant, download both Qwen and Whisper models and use **Talk now**.
+
+The standalone transcription screen displays the transcript only. It does not send the recognized text to the brain or speak a reply. The model is downloaded once and verified against its pinned SHA-256 before it is loaded. Audio remains in memory and is not uploaded or saved as a recording.
 
 ## Release
 
@@ -84,6 +89,7 @@ High-risk tools (SMS, call, HTTP, …) require voice confirmation and are rate-l
 
 Every AI inference, memory read/write, and voice operation runs on-device.
 Network calls are disabled by default and must be explicitly enabled per-tool.
+The standalone transcription flow uses the phone microphone and local Whisper inference only; it does not use Android's speech-recognition provider or send audio to a server.
 
 ## License
 
