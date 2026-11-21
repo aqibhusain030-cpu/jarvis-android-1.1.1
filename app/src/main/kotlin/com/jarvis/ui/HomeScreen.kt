@@ -187,6 +187,19 @@ fun HomeScreen(nav: NavController, killSwitch: KillSwitch, modelManager: ModelMa
                     style = MaterialTheme.typography.bodySmall
                 )
             }
+            OutlinedButton(
+                onClick = { nav.navigate("transcribe") },
+                enabled = modelsReady && !killed && !downloading,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Icon(Icons.Default.RecordVoiceOver, contentDescription = null)
+                Spacer(Modifier.width(8.dp))
+                Text("Standalone speech recognition")
+            }
+            Text(
+                "Speech recognition supports automatic Hindi, English and Arabic detection. The transcription test does not send audio or text to the AI brain.",
+                style = MaterialTheme.typography.bodySmall
+            )
             Text(
                 "Always-on wake-word listening is separate and requires a correctly licensed, verified wake-word model. This build does not silently install non-commercial model weights.",
                 style = MaterialTheme.typography.bodySmall
