@@ -12,15 +12,15 @@
     "temperature": 0.2
   },
   "voice": {
-    "wake_words": ["hey jarvis", "जार्विस", "हे जार्विस", "ओ जार्विस"],
+    "wake_words": ["hey jarvis", "जार्विस", "हे जार्विस", "ओ जार्विस", "يا جارفيس", "جارفيس"],
     "wake_threshold": 0.5,
     "tts_voice_hi": "hi-IN-default",
     "tts_voice_en": "en-IN-default",
     "tts_speed": 1.0,
     "tts_pitch": 1.0,
     "barge_in": true,
-    "vad_silence_ms": 800,
-    "max_command_seconds": 20
+    "vad_silence_ms": 1100,
+    "max_command_seconds": 40
   },
   "llm": {
     "provider": "local",
