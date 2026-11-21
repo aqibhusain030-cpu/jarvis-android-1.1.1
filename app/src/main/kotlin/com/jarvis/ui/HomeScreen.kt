@@ -96,7 +96,7 @@ fun HomeScreen(nav: NavController, killSwitch: KillSwitch, modelManager: ModelMa
         whisperError = ""
         scope.launch {
             val file = modelManager.download("whisper-small") { current, total ->
-                if (total > 0L) whisperProgress = (current.toFloat() / total).coerceIn(0f, 1f)
+                if (total > 0L) {\n                    val ratio = (current.toFloat() / total).coerceIn(0f, 1f)\n                    scope.launch { whisperProgress = ratio }\n                }
             }
             whisperReady = withContext(Dispatchers.IO) {
                 val entry = modelManager.entry("whisper-small")
