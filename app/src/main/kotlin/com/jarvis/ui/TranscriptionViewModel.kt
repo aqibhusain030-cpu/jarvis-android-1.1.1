@@ -3,10 +3,12 @@ package com.jarvis.ui
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.jarvis.service.AudioCapture
+import com.jarvis.service.JarvisForegroundService
 import com.jarvis.service.VoiceActivityDetector
 import com.jarvis.voice.LanguageDetector
 import com.jarvis.voice.SpeechRecognizerBridge
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -24,10 +26,8 @@ data class TranscriptionState(
 )
 
 /**
- * Direct offline ASR test path. It records with Android AudioRecord, segments
- * one complete utterance with local VAD, then calls whisper.cpp JNI directly.
- * It never invokes Android SpeechRecognizer, keyboard dictation, the cloud,
- * the LLM, or TTS.
+ * Direct offline ASR path: AudioRecord -> local VAD -> whisper.cpp JNI.
+ * No Android SpeechRecognizer, keyboard dictation, cloud, LLM or TTS.
  */
 @HiltViewModel
 class TranscriptionViewModel @Inject constructor(
@@ -49,7 +49,7 @@ class TranscriptionViewModel @Inject constructor(
         job = viewModelScope.launch {
             mutableState.value = TranscriptionState(listening = true)
             try {
-                check(!audio.isRunning()) {
+                check(!JarvisForegroundService.isRunning() && !audio.isRunning()) {
                     "Another JARVIS microphone session is active. Stop it before using the transcription test."
                 }
                 val pcm = withContext(Dispatchers.IO) { vad.captureUtterance(audio) }
@@ -73,10 +73,9 @@ class TranscriptionViewModel @Inject constructor(
                     LanguageDetector.Lang.HINGLISH -> "Hindi + English"
                     LanguageDetector.Lang.AR -> "Arabic"
                 }
-                mutableState.value = TranscriptionState(
-                    transcript = text,
-                    language = languageName
-                )
+                mutableState.value = TranscriptionState(transcript = text, language = languageName)
+            } catch (cancelled: CancellationException) {
+                throw cancelled
             } catch (t: Throwable) {
                 mutableState.value = TranscriptionState(
                     error = t.message?.take(300) ?: "Transcription failed."
@@ -95,7 +94,7 @@ class TranscriptionViewModel @Inject constructor(
     }
 
     override fun onCleared() {
-        runCatching { audio.stop() }
+        if (job?.isActive == true) runCatching { audio.stop() }
         super.onCleared()
     }
 }
